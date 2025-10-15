@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura - Meeting Recorder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#EF4444',
+            cream: '#F5F1E8',
+            dark: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-recording {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.02); }
+    }
+    .recording-pulse {
+      animation: pulse-recording 1.5s ease-in-out infinite;
+    }
+    .waveform .bar {
+      height: 12px;
+      transition: height 0.1s ease-out;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    
+    .fade-out {
+      animation: fadeOut 0.3s ease-in forwards;
+    }
+    
+    @keyframes successPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+    
+    .success-pulse {
+      animation: successPulse 0.6s ease-in-out;
+    }
+    
+    @keyframes errorShake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .error-shake {
+      animation: errorShake 0.5s ease-in-out;
+    }
+    
+    /* Glassmorphism effect */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+    }
+    
+    .dark .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    body {
+      -webkit-app-region: drag;
+      user-select: none;
+      transition: background 0.3s ease;
+      background: linear-gradient(135deg, #F5F1E8 0%, #FFE5E5 25%, #E0F5E9 50%, #E5F3FF 75%, #FFE5F1 100%);
+    }
+    
+    .dark body {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
+    }
+    
+    button, input, a, .no-drag {
+      -webkit-app-region: no-drag;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans antialiased overflow-y-auto" id="appBody">
+  <!-- Header -->
+  <header class="flex items-center justify-between px-8 pt-12 pb-6 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" class="text-orange-400 dark:text-orange-500">
+        <path d="M16 4C16 4 10 7 10 13V21C10 24 13 27 16 27C19 27 22 24 22 21V13C22 7 16 4 16 4Z" fill="currentColor"/>
+        <circle cx="16" cy="16" r="3" fill="white"/>
+      </svg>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Aura</h1>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="openSettings" class="p-2.5 rounded-xl bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 transition-all duration-300 no-drag backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50" title="Settings">
+        <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </button>
+      <button id="themeToggle" class="p-2.5 rounded-xl bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 transition-all duration-300 no-drag backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50" title="Toggle theme">
+        <!-- Sun icon for dark mode -->
+        <svg id="sunIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <!-- Moon icon for light mode -->
+        <svg id="moonIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col items-center justify-center px-8 pb-20">
+    <!-- Title Section -->
+    <div class="text-center mt-8 mb-8">
+      <h2 class="text-5xl font-bold text-gray-800 dark:text-white mb-4">Take notes</h2>
+      <p class="text-gray-600 dark:text-gray-300 text-lg max-w-2xl mx-auto">
+        Click the button to start recording. <br>Your meetings, notes,
+        and ideas <br> effortlessly transcribed and summarized.
+      </p>
+    </div>
+
+      <!-- Recording Button -->
+      <div class="mb-4 relative flex flex-col items-center">
+      
+      <div class="flex items-center justify-center relative">
+        <!-- Large Record Button (idle state) -->
+        <button 
+          id="recordButton"
+          class="w-40 h-40 rounded-full bg-cream dark:bg-gray-700 shadow-2xl flex items-center justify-center hover:scale-105 transition-all duration-500 no-drag"
+        >
+          <svg fill="red" width="50%" height="50%" viewBox="0 0 1920 1920" xmlns="http://www.w3.org/2000/svg">
+            <path d="M425.818 709.983V943.41c0 293.551 238.946 532.497 532.497 532.497 293.55 0 532.496-238.946 532.496-532.497V709.983h96.818V943.41c0 330.707-256.438 602.668-580.9 627.471l-.006 252.301h242.044V1920H667.862v-96.818h242.043l-.004-252.3C585.438 1546.077 329 1274.116 329 943.41V709.983h96.818ZM958.315 0c240.204 0 435.679 195.475 435.679 435.68v484.087c0 240.205-195.475 435.68-435.68 435.68-240.204 0-435.679-195.475-435.679-435.68V435.68C522.635 195.475 718.11 0 958.315 0Z" fill-rule="evenodd"/>
+          </svg>
+        </button>
+        
+        <!-- Compact Stop Button with Timer/Status Inside -->
+        <div id="stopButton" class="hidden flex-col items-center gap-3 no-drag">
+          <!-- Timer/Status above -->
+          <div id="timer" class="px-4 py-2 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300">
+            <div id="timerDisplay" class="text-xl font-mono font-bold text-gray-800 dark:text-white">00:00</div>
+            <div id="statusMessage" class="hidden text-base font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap"></div>
+          </div>
+          
+          <!-- Smaller stop button -->
+          <button 
+            id="stopButtonInner"
+            class="w-24 h-24 rounded-full bg-cream dark:bg-gray-800 shadow-2xl flex items-center justify-center hover:scale-105 transition-all duration-300 recording-pulse"
+          >
+            <div id="stopButtonContent" class="w-8 h-8 bg-primary rounded-lg"></div>
+          </button>
+          
+          <!-- Audio bars below -->
+          <div id="recordingVisual" class="flex items-center gap-2">
+            <div class="waveform flex items-center gap-1.5">
+              <div class="bar w-1 bg-primary rounded-full"></div>
+              <div class="bar w-1 bg-primary rounded-full"></div>
+              <div class="bar w-1 bg-primary rounded-full"></div>
+              <div class="bar w-1 bg-primary rounded-full"></div>
+              <div class="bar w-1 bg-primary rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="glass-card rounded-3xl p-8 mt-4 w-full max-w-2xl no-drag">
+      <!-- Meeting Title -->
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Meeting Title (Optional)</label>
+        <input 
+          type="text" 
+          id="meetingTitle" 
+          placeholder="e.g., Q3 Project Kick-off"
+          class="w-full px-4 py-3 bg-white/60 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+        />
+      </div>
+
+      <!-- Participants -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Participants (Optional)</label>
+        <div class="bg-white/60 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl p-3">
+          <div class="flex flex-wrap gap-2 mb-2" id="participantTags">
+            <!-- Participant tags will be added here -->
+          </div>
+          <input 
+            type="text" 
+            id="participantInput" 
+            placeholder="Add by name or email..."
+            class="w-full px-2 py-1 bg-transparent text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Permission Banner -->
+    <div id="permissionBanner" class="hidden mt-6 max-w-2xl w-full p-4 rounded-2xl bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Screen Recording Permission Required</p>
+          <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">This app needs screen recording permission to capture audio.</p>
+          <button 
+            id="openPermissionsButton"
+            class="mt-2 px-4 py-2 text-xs font-medium rounded-lg bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 text-white transition-colors no-drag"
+          >
+            Open System Settings
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Floating History Button (Bottom Right) -->
+  <button id="historyButton" class="fixed bottom-8 right-8 px-6 py-3 rounded-full bg-white/80 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-700 backdrop-blur-sm shadow-xl border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-200 font-medium transition-all duration-300 hover:scale-105 no-drag flex items-center gap-2" title="View History">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>History</span>
+  </button>
+
+  <!-- Hidden elements for settings -->
+  <button id="checkPermissionButton" class="hidden"></button>
+  
+  <!-- Hidden config info for functionality -->
+  <div class="hidden">
+    <span id="vaultPath"></span>
+    <span id="modelName"></span>
+    <span id="statusDot"></span>
+    <span id="statusText"></span>
+    <span id="actionLabel"></span>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

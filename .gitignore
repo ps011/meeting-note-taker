@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+
+# Temporary files
+temp/
+*.wav
+*.mp3
+*.txt
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Electron build output
+dist/
+out/
+*.dmg
+*.zip
+
+# Keep build configuration files
+!build/
+!build/*.plist
+
+# Electron cache
+.electron/
+

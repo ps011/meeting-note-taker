@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup - Meeting Note Taker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      -webkit-app-region: no-drag;
+    }
+    button, input, select {
+      -webkit-app-region: no-drag;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-screen overflow-y-auto transition-colors">
+  <div class="max-w-2xl mx-auto p-8 min-h-screen">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <div class="flex justify-center items-center gap-4 mb-4">
+        <svg width="64" height="64" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" fill="#3b82f6" opacity="0.2"/>
+          <path d="M16 8C16 8 12 10 12 14V20C12 22 14 24 16 24C18 24 20 22 20 20V14C20 10 16 8 16 8Z" 
+                fill="#3b82f6"/>
+          <circle cx="16" cy="16" r="3" fill="#fff"/>
+        </svg>
+        
+        <!-- Theme Switcher -->
+        <button id="themeToggle" class="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 transition" title="Toggle theme">
+          <svg id="sunIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg id="moonIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
+      </div>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Welcome to Meeting Note Taker</h1>
+      <p class="text-gray-600 dark:text-gray-400">Let's set up your Obsidian vault to get started</p>
+    </div>
+
+    <!-- Main Setup Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-6">
+      <!-- Step 0: System Dependencies -->
+      <div id="dependenciesSection" class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-full bg-purple-500 text-white flex items-center justify-center font-semibold">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">System Dependencies</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Required tools for transcription and summarization</p>
+          </div>
+        </div>
+
+        <div class="ml-13 space-y-4">
+          <!-- Dependency Status Container -->
+          <div id="dependencyStatus" class="space-y-3">
+            <!-- Will be populated dynamically -->
+          </div>
+
+          <!-- Action Buttons -->
+          <div id="dependencyActions" class="flex gap-3 hidden">
+            <button 
+              id="checkDepsButton"
+              class="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+              </svg>
+              Check Dependencies
+            </button>
+            <button 
+              id="installDepsButton"
+              class="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition flex items-center justify-center gap-2 hidden"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Install Missing Dependencies
+            </button>
+          </div>
+
+          <!-- Overall Progress -->
+          <div id="overallProgress" class="hidden">
+            <div class="flex items-center justify-between mb-2">
+              <span id="progressLabel" class="text-sm font-medium text-gray-700 dark:text-gray-300">Checking dependencies...</span>
+              <span id="progressPercent" class="text-sm text-gray-500 dark:text-gray-400">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+              <div id="progressBar" class="bg-blue-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Info Note -->
+          <div class="p-4 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+            <p class="text-sm text-purple-800 dark:text-purple-200">
+              <strong>ℹ️ Note:</strong> This app requires Whisper, Ollama, FFmpeg, Sox, and Python. We'll automatically check and install missing tools using Homebrew.
+            </p>
+            <p class="text-xs text-purple-700 dark:text-purple-300 mt-2">
+              Installing Homebrew (if needed) may prompt for your system password - this is normal and safe.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t dark:border-gray-700 mb-8"></div>
+
+      <!-- Step 1: Obsidian Vault -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
+            1
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Meeting Notes Folder</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Select the folder where meeting notes will be saved</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 ml-13">
+          <div class="flex gap-3">
+            <input 
+              type="text" 
+              id="vaultPath" 
+              placeholder="/Users/you/Documents/ObsidianVault/Meetings"
+              class="flex-1 px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition placeholder-gray-400 dark:placeholder-gray-500"
+            />
+            <button 
+              id="browseButton"
+              class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition whitespace-nowrap"
+            >
+              Browse
+            </button>
+          </div>
+
+          <!-- Vault Status -->
+          <div id="vaultStatus" class="hidden p-4 rounded-lg">
+            <!-- Status will be inserted here dynamically -->
+          </div>
+
+          <!-- Create Vault Button -->
+          <button 
+            id="createVaultButton"
+            class="hidden w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition"
+          >
+            Create Vault
+          </button>
+        </div>
+      </div>
+
+      <!-- Advanced Settings Toggle -->
+      <div class="border-t dark:border-gray-700 pt-8">
+        <button 
+          id="advancedToggle"
+          class="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"/>
+          </svg>
+          Advanced Settings (Optional)
+        </button>
+      </div>
+
+      <!-- Advanced Settings Content -->
+      <div id="advancedSettings" class="hidden mt-6 space-y-6">
+        <!-- Llama Model -->
+        <div>
+          <label for="llamaModel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Llama Model Name
+          </label>
+          <input 
+            type="text" 
+            id="llamaModel" 
+            value="llama3"
+            placeholder="llama3"
+            class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition placeholder-gray-400 dark:placeholder-gray-500"
+          />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The Ollama model to use for summarization</p>
+        </div>
+
+        <!-- Whisper Model -->
+        <div>
+          <label for="whisperModel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Whisper Model
+          </label>
+          <select 
+            id="whisperModel"
+            class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+          >
+            <option value="tiny">Tiny (fastest, least accurate)</option>
+            <option value="base" selected>Base (recommended)</option>
+            <option value="small">Small (slower, more accurate)</option>
+            <option value="medium">Medium (much slower)</option>
+            <option value="large">Large (slowest, most accurate)</option>
+          </select>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Larger models are more accurate but slower</p>
+        </div>
+
+        <!-- Llama API URL -->
+        <div>
+          <label for="llamaApiUrl" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Llama API URL
+          </label>
+          <input 
+            type="text" 
+            id="llamaApiUrl" 
+            value="http://localhost:11434/api/generate"
+            placeholder="http://localhost:11434/api/generate"
+            class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition font-mono text-sm placeholder-gray-400 dark:placeholder-gray-500"
+          />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Local Ollama API endpoint</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-4">
+      <button 
+        id="skipButton"
+        class="flex-1 px-6 py-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition"
+      >
+        Skip for Now
+      </button>
+      <button 
+        id="completeButton"
+        class="flex-1 px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled
+      >
+        Complete Setup
+      </button>
+    </div>
+
+    <!-- Info Note -->
+    <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <p class="text-sm text-blue-800 dark:text-blue-200">
+        <strong>💡 Tip:</strong> You can always change these settings later from the Settings menu.
+      </p>
+    </div>
+  </div>
+
+  <script src="setup.js"></script>
+</body>
+</html>
