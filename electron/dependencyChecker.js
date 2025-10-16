@@ -13,7 +13,7 @@ class DependencyChecker {
     this.dependencies = [
       {
         name: 'Homebrew',
-        command: 'brew --version',
+        command: 'which brew && brew --version',
         installCommand: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
         required: true,
         description: 'Package manager for macOS',
@@ -21,7 +21,7 @@ class DependencyChecker {
       },
       {
         name: 'Python3',
-        command: 'python3 --version',
+        command: 'which python3 && python3 --version',
         installCommand: 'brew install python3',
         required: true,
         description: 'Python 3 runtime (required for Whisper)',
@@ -29,7 +29,7 @@ class DependencyChecker {
       },
       {
         name: 'FFmpeg',
-        command: 'ffmpeg -version',
+        command: 'which ffmpeg && ffmpeg -version',
         installCommand: 'brew install ffmpeg',
         required: true,
         description: 'Audio/video processing tool',
@@ -37,7 +37,7 @@ class DependencyChecker {
       },
       {
         name: 'Sox',
-        command: 'sox --version',
+        command: 'which sox && sox --version',
         installCommand: 'brew install sox',
         required: true,
         description: 'Sound processing tool',
@@ -45,7 +45,7 @@ class DependencyChecker {
       },
       {
         name: 'Ollama',
-        command: 'ollama --version',
+        command: 'which ollama && ollama --version',
         installCommand: 'brew install ollama',
         required: true,
         description: 'Local LLM runtime',
@@ -53,7 +53,7 @@ class DependencyChecker {
       },
       {
         name: 'Whisper',
-        command: 'whisper --help',
+        command: 'which whisper && whisper --help',
         installCommand: 'pip3 install -U openai-whisper',
         required: true,
         description: 'Speech-to-text transcription',
@@ -70,11 +70,93 @@ class DependencyChecker {
   }
 
   /**
+   * Debug environment information
+   */
+  async debugEnvironment() {
+    console.log('Platform:', this.platform);
+    console.log('Node version:', process.version);
+    console.log('Electron version:', process.versions.electron);
+    const isPackaged = process.env.NODE_ENV === 'production' || (process.env.ELECTRON_IS_DEV !== '1' && !process.env.npm_lifecycle_event);
+    console.log('App is packaged:', isPackaged);
+    
+    // Check PATH
+    const pathResult = await this.executeCommand('echo $PATH');
+    console.log('PATH:', pathResult.stdout);
+    
+    // Check common locations
+    const homeDir = process.env.HOME || os.homedir();
+    console.log('Home directory:', homeDir);
+    const locations = ['/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', '/bin', homeDir + '/.local/bin'];
+    for (const location of locations) {
+      const result = await this.executeCommand(`ls -la ${location} 2>/dev/null | head -5`);
+      console.log(`${location}:`, result.success ? 'exists' : 'not accessible');
+    }
+  }
+
+  /**
+   * Check if Whisper is installed via pip or pipx
+   */
+  async checkWhisperViaPip() {
+    // First check pipx installations
+    const pipxCommands = [
+      'pipx list',
+      '/usr/local/bin/pipx list',
+      '/opt/homebrew/bin/pipx list'
+    ];
+    
+    for (const pipxCmd of pipxCommands) {
+      console.log(`Checking pipx for Whisper: ${pipxCmd}`);
+      const result = await this.executeCommand(pipxCmd, 5000);
+      console.log(`Pipx command result - Success: ${result.success}, Output: ${result.stdout}, Error: ${result.error}`);
+      
+      if (result.success && result.stdout.toLowerCase().includes('whisper')) {
+        console.log(`Found Whisper in pipx: ${result.stdout}`);
+        return true;
+      }
+    }
+    
+    // Then check regular pip installations
+    const pipCommands = [
+      'pip3 list',
+      '/usr/bin/pip3 list',
+      '/usr/local/bin/pip3 list',
+      '/opt/homebrew/bin/pip3 list',
+      'python3 -m pip list',
+      '/usr/bin/python3 -m pip list',
+      '/usr/local/bin/python3 -m pip list',
+      '/opt/homebrew/bin/python3 -m pip list'
+    ];
+    
+    for (const pipCmd of pipCommands) {
+      console.log(`Checking pip for Whisper: ${pipCmd}`);
+      const result = await this.executeCommand(pipCmd, 5000);
+      console.log(`Pip command result - Success: ${result.success}, Output: ${result.stdout}, Error: ${result.error}`);
+      
+      if (result.success && result.stdout.toLowerCase().includes('whisper')) {
+        console.log(`Found Whisper in pip: ${result.stdout}`);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Execute command and check if successful
    */
   async executeCommand(command, timeout = 30000) {
     try {
-      const { stdout, stderr } = await execAsync(command, { timeout });
+      // For packaged apps, we need to ensure the PATH includes common locations
+      const homeDir = process.env.HOME || os.homedir();
+      const env = {
+        ...process.env,
+        PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:' + homeDir + '/.local/bin'
+      };
+      
+      const { stdout, stderr } = await execAsync(command, { 
+        timeout,
+        env: env,
+        shell: true
+      });
       return { success: true, stdout, stderr };
     } catch (error) {
       return { success: false, error: error.message, code: error.code };
@@ -86,7 +168,96 @@ class DependencyChecker {
    */
   async checkDependency(dependency) {
     console.log(`Checking ${dependency.name}...`);
-    const result = await this.executeCommand(dependency.command, 5000);
+    
+    // Try multiple approaches to find the executable
+    let result = await this.executeCommand(dependency.command, 5000);
+    
+    // If the main command fails, try alternative approaches
+    if (!result.success) {
+      if (dependency.name === 'Homebrew') {
+        // Try common Homebrew locations
+        const brewPaths = ['/opt/homebrew/bin/brew', '/usr/local/bin/brew'];
+        for (const brewPath of brewPaths) {
+          console.log(`Trying Homebrew at: ${brewPath}`);
+          result = await this.executeCommand(`${brewPath} --version`, 5000);
+          if (result.success) {
+            console.log(`Found Homebrew at ${brewPath}`);
+            break;
+          }
+        }
+      } else if (dependency.name === 'Whisper') {
+        // Special handling for Whisper - it's a Python package
+        console.log('Trying Whisper-specific detection methods...');
+        
+        // First try pip check
+        console.log('Starting Whisper pip check...');
+        const pipCheck = await this.checkWhisperViaPip();
+        if (pipCheck) {
+          result = { success: true };
+          console.log('Found Whisper via pip check');
+        } else {
+          console.log('Pip check failed, trying import commands...');
+          // Try import and module commands
+          const homeDir = process.env.HOME || os.homedir();
+          const whisperCommands = [
+            homeDir + '/.local/bin/whisper --help 2>/dev/null',
+            'whisper --help 2>/dev/null',
+            'python3 -c "import whisper; print(\'whisper available\')" 2>/dev/null',
+            '/usr/bin/python3 -c "import whisper; print(\'whisper available\')" 2>/dev/null',
+            '/usr/local/bin/python3 -c "import whisper; print(\'whisper available\')" 2>/dev/null',
+            '/opt/homebrew/bin/python3 -c "import whisper; print(\'whisper available\')" 2>/dev/null',
+            'python3 -m whisper --help 2>/dev/null',
+            '/usr/bin/python3 -m whisper --help 2>/dev/null',
+            '/usr/local/bin/python3 -m whisper --help 2>/dev/null',
+            '/opt/homebrew/bin/python3 -m whisper --help 2>/dev/null'
+          ];
+          
+          for (const whisperCmd of whisperCommands) {
+            console.log(`Trying Whisper command: ${whisperCmd}`);
+            result = await this.executeCommand(whisperCmd, 5000);
+            console.log(`Whisper command result - Success: ${result.success}, Output: ${result.stdout}, Error: ${result.error}`);
+            
+            if (result.success) {
+              console.log(`Found Whisper with command: ${whisperCmd}`);
+              break;
+            }
+          }
+          
+          // If all commands failed, try a simple Python import test
+          if (!result.success) {
+            console.log('All Whisper commands failed, trying simple import test...');
+            const simpleImportCommands = [
+              'python3 -c "try: import whisper; print(\'OK\')\nexcept: print(\'FAIL\')"',
+              '/usr/bin/python3 -c "try: import whisper; print(\'OK\')\nexcept: print(\'FAIL\')"',
+              '/usr/local/bin/python3 -c "try: import whisper; print(\'OK\')\nexcept: print(\'FAIL\')"',
+              '/opt/homebrew/bin/python3 -c "try: import whisper; print(\'OK\')\nexcept: print(\'FAIL\')"'
+            ];
+            
+            for (const simpleCmd of simpleImportCommands) {
+              console.log(`Trying simple import: ${simpleCmd}`);
+              result = await this.executeCommand(simpleCmd, 5000);
+              console.log(`Simple import result - Success: ${result.success}, Output: ${result.stdout}, Error: ${result.error}`);
+              
+              if (result.success && result.stdout.trim() === 'OK') {
+                console.log(`Found Whisper with simple import: ${simpleCmd}`);
+                break;
+              }
+            }
+          }
+        }
+      } else {
+        // Try with absolute paths
+        const alternativeCommands = this.getAlternativeCommands(dependency.name);
+        for (const altCommand of alternativeCommands) {
+          console.log(`Trying alternative command: ${altCommand}`);
+          result = await this.executeCommand(altCommand, 5000);
+          if (result.success) {
+            console.log(`Found ${dependency.name} with alternative command`);
+            break;
+          }
+        }
+      }
+    }
     
     return {
       name: dependency.name,
@@ -98,6 +269,49 @@ class DependencyChecker {
   }
 
   /**
+   * Get alternative commands to try for finding executables
+   */
+  getAlternativeCommands(toolName) {
+    const homeDir = process.env.HOME || os.homedir();
+    
+    const commands = {
+      'Python3': [
+        '/usr/bin/python3 --version',
+        '/usr/local/bin/python3 --version',
+        '/opt/homebrew/bin/python3 --version'
+      ],
+      'FFmpeg': [
+        '/usr/local/bin/ffmpeg -version',
+        '/opt/homebrew/bin/ffmpeg -version'
+      ],
+      'Sox': [
+        '/usr/local/bin/sox --version',
+        '/opt/homebrew/bin/sox --version'
+      ],
+      'Ollama': [
+        '/usr/local/bin/ollama --version',
+        '/opt/homebrew/bin/ollama --version'
+      ],
+      'Whisper': [
+        homeDir + '/.local/bin/whisper --help',
+        '/usr/local/bin/whisper --help',
+        '/opt/homebrew/bin/whisper --help',
+        'whisper --help',
+        'python3 -c "import whisper; print(\'whisper available\')"',
+        '/usr/bin/python3 -c "import whisper; print(\'whisper available\')"',
+        '/usr/local/bin/python3 -c "import whisper; print(\'whisper available\')"',
+        '/opt/homebrew/bin/python3 -c "import whisper; print(\'whisper available\')"',
+        'python3 -m whisper --help',
+        '/usr/bin/python3 -m whisper --help',
+        '/usr/local/bin/python3 -m whisper --help',
+        '/opt/homebrew/bin/python3 -m whisper --help'
+      ]
+    };
+    
+    return commands[toolName] || [];
+  }
+
+  /**
    * Check all dependencies
    */
   async checkAll(progressCallback) {
@@ -106,6 +320,13 @@ class DependencyChecker {
         success: false,
         error: 'Automatic dependency installation is only supported on macOS'
       };
+    }
+
+    // Debug environment in packaged apps
+    const isPackaged = process.env.NODE_ENV === 'production' || (process.env.ELECTRON_IS_DEV !== '1' && !process.env.npm_lifecycle_event);
+    if (isPackaged) {
+      console.log('Running in packaged environment, debugging...');
+      await this.debugEnvironment();
     }
 
     const results = [];

@@ -308,6 +308,44 @@ ipcMain.handle('check-dependencies', async (event) => {
   return result;
 });
 
+ipcMain.handle('debug-environment', async (event) => {
+  const checker = new DependencyChecker();
+  await checker.debugEnvironment();
+  return { success: true };
+});
+
+ipcMain.handle('debug-whisper', async (event) => {
+  const checker = new DependencyChecker();
+  console.log('=== Whisper Debug ===');
+  
+  // Check pip
+  const pipCheck = await checker.checkWhisperViaPip();
+  console.log('Pip check result:', pipCheck);
+  
+  // Try various Python commands
+  const pythonCommands = [
+    'python3 --version',
+    '/usr/bin/python3 --version',
+    '/usr/local/bin/python3 --version',
+    '/opt/homebrew/bin/python3 --version',
+    'python3 -c "import sys; print(sys.path)"',
+    'python3 -c "import whisper; print(whisper.__version__)"'
+  ];
+  
+  for (const cmd of pythonCommands) {
+    const result = await checker.executeCommand(cmd, 5000);
+    console.log(`Command: ${cmd}`);
+    console.log(`Success: ${result.success}`);
+    if (result.success) {
+      console.log(`Output: ${result.stdout}`);
+    } else {
+      console.log(`Error: ${result.error}`);
+    }
+  }
+  
+  return { success: true };
+});
+
 ipcMain.handle('install-dependencies', async (event, missingDeps) => {
   const checker = new DependencyChecker();
   
