@@ -37,6 +37,10 @@ out/
 *.dmg
 *.zip
 
+# Keep release builds for distribution
+!dist/*.dmg
+!dist/*.zip
+
 # Keep build configuration files
 !build/
 !build/*.plist

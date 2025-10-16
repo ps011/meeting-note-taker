@@ -369,11 +369,11 @@ async function startRecording() {
   }
 }
 
-// Start microphone recording with system audio (Vibe-style approach)
+// Start microphone recording with system audio (Enhanced approach for headphones)
 async function startMicrophoneRecording() {
   try {
     console.log('🎙️ Starting audio recording (microphone + system audio)...');
-    console.log('📚 Using Vibe-style audio capture with virtual device detection\n');
+    console.log('📚 Using enhanced audio capture with headphone support\n');
     
     // Step 1: Enumerate all audio input devices
     console.log('🔍 Enumerating audio devices...');
@@ -385,16 +385,39 @@ async function startMicrophoneRecording() {
       console.log(`  ${index + 1}. ${device.label || 'Unknown device'} (${device.deviceId.substring(0, 20)}...)`);
     });
     
-    // Step 2: Detect virtual audio devices (BlackHole, Soundflower, Loopback)
+    // Step 2: Detect virtual audio devices and audio interfaces
     const virtualDevices = audioInputs.filter(device => {
       const label = device.label.toLowerCase();
       return label.includes('blackhole') || 
              label.includes('soundflower') || 
              label.includes('virtual') ||
-             label.includes('loopback');
+             label.includes('loopback') ||
+             label.includes('aggregate') ||
+             label.includes('multi-output');
+    });
+    
+    // Step 3: Detect headphone/audio interface devices
+    const headphoneDevices = audioInputs.filter(device => {
+      const label = device.label.toLowerCase();
+      return label.includes('headphone') || 
+             label.includes('airpods') ||
+             label.includes('bluetooth') ||
+             label.includes('usb audio') ||
+             label.includes('audio interface') ||
+             label.includes('focusrite') ||
+             label.includes('scarlett') ||
+             label.includes('apollo') ||
+             label.includes('rme') ||
+             label.includes('motu');
+    });
+    
+    console.log(`\n🎧 Detected ${headphoneDevices.length} headphone/audio interface device(s):`);
+    headphoneDevices.forEach((device, index) => {
+      console.log(`  ${index + 1}. ${device.label}`);
     });
     
     let systemAudioStream = null;
+    let systemAudioSource = 'none';
     
     if (virtualDevices.length > 0) {
       console.log(`\n✅ Found ${virtualDevices.length} virtual audio device(s) for system audio:`);
@@ -402,37 +425,97 @@ async function startMicrophoneRecording() {
         console.log(`  ${index + 1}. ${device.label}`);
       });
       
-      // Use the first virtual device for system audio
-      const virtualDevice = virtualDevices[0];
-      console.log(`\n🔊 Using "${virtualDevice.label}" for system audio capture`);
+      // Try virtual devices first (preferred for system audio)
+      for (const virtualDevice of virtualDevices) {
+        console.log(`\n🔊 Attempting to use "${virtualDevice.label}" for system audio capture`);
+        
+        try {
+          systemAudioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              deviceId: { exact: virtualDevice.deviceId },
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            },
+            video: false
+          });
+          systemAudioSource = virtualDevice.label;
+          console.log(`✅ System audio stream obtained from virtual device: ${virtualDevice.label}`);
+          break; // Success, stop trying other devices
+        } catch (error) {
+          console.warn(`⚠️ Failed to get system audio from ${virtualDevice.label}:`, error.message);
+          continue; // Try next device
+        }
+      }
+    }
+    
+    // Step 4: If virtual devices failed and headphones are connected, try alternative approaches
+    if (!systemAudioStream && headphoneDevices.length > 0) {
+      console.log('\n🔄 Virtual devices failed, trying headphone audio interface approach...');
+      
+      // Try to get system audio through headphone device (if it supports it)
+      for (const headphoneDevice of headphoneDevices) {
+        console.log(`\n🎧 Attempting to use "${headphoneDevice.label}" for system audio capture`);
+        
+        try {
+          systemAudioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              deviceId: { exact: headphoneDevice.deviceId },
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            },
+            video: false
+          });
+          systemAudioSource = headphoneDevice.label;
+          console.log(`✅ System audio stream obtained from headphone device: ${headphoneDevice.label}`);
+          break;
+        } catch (error) {
+          console.warn(`⚠️ Failed to get system audio from ${headphoneDevice.label}:`, error.message);
+          continue;
+        }
+      }
+    }
+    
+    // Step 5: Final fallback - try to get any available audio input
+    if (!systemAudioStream) {
+      console.log('\n🔄 Trying fallback approach - attempting to capture from any available audio input...');
       
       try {
+        // Try to get audio without specifying device (let browser choose)
         systemAudioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            deviceId: { exact: virtualDevice.deviceId },
             echoCancellation: false,
             noiseSuppression: false,
             autoGainControl: false
           },
           video: false
         });
-        console.log('✅ System audio stream obtained from virtual device');
+        systemAudioSource = 'browser-selected';
+        console.log('✅ System audio stream obtained from browser-selected device');
       } catch (error) {
-        console.warn('⚠️ Failed to get system audio from virtual device:', error);
-        systemAudioStream = null;
+        console.warn('⚠️ Fallback system audio capture failed:', error.message);
       }
-    } else {
-      console.warn('\n⚠️ No virtual audio device detected (BlackHole, Soundflower, etc.)');
-      console.warn('💡 System audio will NOT be captured - only microphone audio will be recorded.');
-      console.warn('\n📖 To capture system audio on macOS, install a virtual audio device:');
-      console.warn('   • BlackHole (recommended): brew install blackhole-2ch');
-      console.warn('   • Soundflower: https://github.com/mattingalls/Soundflower');
-      console.warn('   Then configure your Mac to route audio to the virtual device.');
-      console.warn('   See documentation for full setup instructions.\n');
     }
     
-    // Step 3: Get microphone audio
-    console.log('📱 Requesting microphone access...');
+    // Step 6: Provide user guidance based on results
+    if (!systemAudioStream) {
+      console.warn('\n⚠️ No system audio capture available');
+      console.warn('💡 System audio will NOT be captured - only microphone audio will be recorded.');
+      console.warn('\n📖 To enable system audio capture with headphones:');
+      console.warn('   1. Install BlackHole: brew install blackhole-2ch');
+      console.warn('   2. Configure macOS Audio MIDI Setup:');
+      console.warn('      • Create Multi-Output Device');
+      console.warn('      • Include both headphones and BlackHole');
+      console.warn('      • Set as system output device');
+      console.warn('   3. Or use audio interface with loopback capability');
+      console.warn('   4. Restart this app after configuration\n');
+    } else {
+      console.log(`\n🎉 System audio capture successful using: ${systemAudioSource}`);
+    }
+    
+    // Step 7: Get microphone audio (separate from system audio)
+    console.log('\n📱 Requesting microphone access...');
     const micStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -444,7 +527,7 @@ async function startMicrophoneRecording() {
     
     console.log('✅ Microphone access granted');
     
-    // Step 4: Merge streams if we have system audio, otherwise just use microphone
+    // Step 8: Merge streams if we have system audio, otherwise just use microphone
     if (systemAudioStream) {
       console.log('\n🔀 Merging microphone + system audio streams using Web Audio API...');
       audioContext = new AudioContext();
@@ -478,7 +561,7 @@ async function startMicrophoneRecording() {
       const mergedAudioTracks = mergedStream.getAudioTracks();
       
       console.log(`\n📊 Stream Summary:`);
-      console.log(`   • System audio tracks: ${systemAudioTracks.length}`);
+      console.log(`   • System audio tracks: ${systemAudioTracks.length} (source: ${systemAudioSource})`);
       console.log(`   • Microphone tracks: ${micAudioTracks.length}`);
       console.log(`   • Merged tracks: ${mergedAudioTracks.length}`);
       
@@ -497,7 +580,7 @@ async function startMicrophoneRecording() {
       };
     }
     
-    // Step 5: Set up audio visualization
+    // Step 9: Set up audio visualization
     console.log('\n🎨 Setting up audio visualization...');
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 256; // Higher = more frequency detail
@@ -509,7 +592,7 @@ async function startMicrophoneRecording() {
     
     console.log('✅ Audio visualization ready');
     
-    // Step 6: Create MediaRecorder with the stream (merged or mic-only)
+    // Step 10: Create MediaRecorder with the stream (merged or mic-only)
     audioChunks = [];
     let dataReceived = 0;
     
@@ -541,10 +624,10 @@ async function startMicrophoneRecording() {
     mediaRecorder.start(1000);
     
     if (systemAudioStream) {
-      console.log('✅ Recording started: Microphone + System Audio (1s timeslice)');
+      console.log(`✅ Recording started: Microphone + System Audio (source: ${systemAudioSource})`);
     } else {
-      console.log('✅ Recording started: Microphone Only (1s timeslice)');
-      console.log('💡 Install BlackHole to enable system audio capture');
+      console.log('✅ Recording started: Microphone Only');
+      console.log('💡 For system audio with headphones, configure BlackHole Multi-Output Device');
     }
     
   } catch (error) {

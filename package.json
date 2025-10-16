@@ -60,8 +60,16 @@
     "obsidian",
     "electron"
   ],
-  "author": "",
+  "author": "Aura Meeting Recorder",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prasheelsoni/meeting-note-taker.git"
+  },
+  "homepage": "https://github.com/prasheelsoni/meeting-note-taker#readme",
+  "bugs": {
+    "url": "https://github.com/prasheelsoni/meeting-note-taker/issues"
+  },
   "dependencies": {
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",

@@ -1,8 +1,16 @@
-# 🎙️ Meeting Note Taker
+# 🎙️ Aura - Meeting Note Taker
 
-A macOS desktop app that records meetings, transcribes them with Whisper, and generates summaries using local Llama models.
+[![Latest Release](https://img.shields.io/github/v/release/prasheelsoni/meeting-note-taker)](https://github.com/prasheelsoni/meeting-note-taker/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![macOS](https://img.shields.io/badge/platform-macOS-blue.svg)](https://github.com/prasheelsoni/meeting-note-taker/releases)
 
-![Meeting Note Taker](assets/icon.png)
+A powerful macOS desktop app that records meetings, transcribes them with Whisper, and generates summaries using local Llama models. Everything runs locally for complete privacy.
+
+## 📦 Download
+
+Download the latest version from [GitHub Releases](https://github.com/prasheelsoni/meeting-note-taker/releases/latest).
+
+**System Requirements**: macOS 10.15+ (Apple Silicon or Intel)
 
 ## ✨ Features
 
@@ -114,9 +122,27 @@ Your Voice → Microphone → Whisper (transcribe) → Llama (summarize) → Obs
 3. Llama generates structured summary with action items
 4. Saves formatted note to Obsidian with full transcript
 
+## 🔒 Privacy & Security
+
+- **100% Local Processing**: All audio processing happens on your machine
+- **No Data Collection**: No telemetry, analytics, or data sent to external servers
+- **Open Source**: Full source code available for transparency and auditing
+- **Permissions**: Only requests microphone and screen recording permissions necessary for functionality
+
 ## 📝 License
 
-MIT
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 🐛 Bug Reports
+
+Found a bug? Please [open an issue](https://github.com/prasheelsoni/meeting-note-taker/issues) with:
+- macOS version
+- Steps to reproduce
+- Expected vs actual behavior
 
 ---
 
