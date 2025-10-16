@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Guide - Meeting Note Taker</title>
+    <meta name="description" content="Complete installation guide for Meeting Note Taker on macOS">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <img src="../assets/icon.svg" alt="Meeting Note Taker" class="logo-icon">
+                <h1>Meeting Note Taker</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="installation.html" class="nav-link active">Installation</a>
+                <a href="usage.html" class="nav-link">Usage</a>
+                <a href="troubleshooting.html" class="nav-link">Troubleshooting</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Installation Guide</h1>
+                <p class="hero-subtitle">Step-by-step instructions to get Meeting Note Taker running on your Mac</p>
+            </div>
+        </section>
+
+        <section class="installation-guide">
+            <div class="container">
+                <div class="guide-content">
+                    <div class="prerequisites">
+                        <h2>Prerequisites</h2>
+                        <div class="prereq-list">
+                            <div class="prereq-item">
+                                <div class="prereq-icon">💻</div>
+                                <div>
+                                    <h3>macOS 10.15+</h3>
+                                    <p>Compatible with Catalina, Big Sur, Monterey, Ventura, and Sonoma</p>
+                                </div>
+                            </div>
+                            <div class="prereq-item">
+                                <div class="prereq-icon">🧠</div>
+                                <div>
+                                    <h3>8GB RAM</h3>
+                                    <p>Minimum 8GB, 16GB recommended for optimal performance</p>
+                                </div>
+                            </div>
+                            <div class="prereq-item">
+                                <div class="prereq-icon">💾</div>
+                                <div>
+                                    <h3>2GB Free Space</h3>
+                                    <p>For app installation and temporary files</p>
+                                </div>
+                            </div>
+                            <div class="prereq-item">
+                                <div class="prereq-icon">🎙️</div>
+                                <div>
+                                    <h3>Microphone Access</h3>
+                                    <p>Required for audio recording</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="installation-steps">
+                        <h2>Installation Steps</h2>
+                        
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>Download the Application</h3>
+                                <p>Download the latest DMG file from our releases page:</p>
+                                <div class="code-block">
+                                    <code>https://github.com/prasheelsoni/meeting-note-taker/releases/latest</code>
+                                </div>
+                                <p>Look for the file named <code>Meeting Note Taker-1.0.0-arm64.dmg</code> (or similar version number).</p>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>Install the Application</h3>
+                                <ol>
+                                    <li>Double-click the downloaded DMG file</li>
+                                    <li>Drag the "Meeting Note Taker" app to your Applications folder</li>
+                                    <li>Eject the DMG file</li>
+                                    <li>Launch the app from Applications or Spotlight</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>Grant Permissions</h3>
+                                <p>When you first launch the app, you'll need to grant several permissions:</p>
+                                <ul>
+                                    <li><strong>Microphone Access:</strong> Required for recording audio</li>
+                                    <li><strong>Screen Recording:</strong> Required for capturing system audio</li>
+                                </ul>
+                                <div class="warning-box">
+                                    <strong>Important:</strong> After granting permissions, you must quit and relaunch the app for changes to take effect.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>Automatic Dependency Installation</h3>
+                                <p>The app will automatically check and install required dependencies:</p>
+                                <div class="dependencies-grid">
+                                    <div class="dependency-item">
+                                        <h4>Homebrew</h4>
+                                        <p>Package manager for macOS</p>
+                                    </div>
+                                    <div class="dependency-item">
+                                        <h4>Python 3</h4>
+                                        <p>Runtime environment for Whisper</p>
+                                    </div>
+                                    <div class="dependency-item">
+                                        <h4>FFmpeg</h4>
+                                        <p>Audio/video processing</p>
+                                    </div>
+                                    <div class="dependency-item">
+                                        <h4>Sox</h4>
+                                        <p>Sound processing utilities</p>
+                                    </div>
+                                    <div class="dependency-item">
+                                        <h4>Ollama</h4>
+                                        <p>Local LLM runtime</p>
+                                    </div>
+                                    <div class="dependency-item">
+                                        <h4>Whisper</h4>
+                                        <p>AI transcription model</p>
+                                    </div>
+                                </div>
+                                <div class="info-box">
+                                    <strong>Note:</strong> This process may take several minutes depending on your internet connection and system performance.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <h3>Configure Settings</h3>
+                                <p>Set up your preferences in the app:</p>
+                                <ul>
+                                    <li><strong>Obsidian Vault Path:</strong> Choose where to save your meeting notes</li>
+                                    <li><strong>Whisper Model:</strong> Select transcription accuracy vs speed (tiny/base/small/medium/large)</li>
+                                    <li><strong>Llama Model:</strong> Choose summarization model (llama3 recommended)</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">6</div>
+                            <div class="step-content">
+                                <h3>Test the Installation</h3>
+                                <p>Verify everything is working:</p>
+                                <ol>
+                                    <li>Click the "Record" button</li>
+                                    <li>Speak into your microphone for a few seconds</li>
+                                    <li>Click "Stop" and wait for processing</li>
+                                    <li>Check that transcription and summary are generated</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-installation">
+                        <h2>Manual Installation (Advanced)</h2>
+                        <p>If you prefer to install dependencies manually or encounter issues with automatic installation:</p>
+                        
+                        <div class="manual-steps">
+                            <h3>Install Homebrew</h3>
+                            <div class="code-block">
+                                <code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>
+                            </div>
+
+                            <h3>Install Dependencies</h3>
+                            <div class="code-block">
+                                <code>brew install python3 ffmpeg sox ollama</code>
+                            </div>
+
+                            <h3>Install Whisper</h3>
+                            <div class="code-block">
+                                <code>pip3 install -U openai-whisper</code>
+                            </div>
+
+                            <h3>Start Ollama Service</h3>
+                            <div class="code-block">
+                                <code>ollama serve</code>
+                            </div>
+
+                            <h3>Pull Llama Model</h3>
+                            <div class="code-block">
+                                <code>ollama pull llama3</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="troubleshooting">
+                        <h2>Common Issues</h2>
+                        <div class="issue">
+                            <h3>Permission Denied Errors</h3>
+                            <p><strong>Solution:</strong> Make sure you've granted microphone and screen recording permissions in System Preferences > Security & Privacy.</p>
+                        </div>
+                        <div class="issue">
+                            <h3>Dependencies Not Found</h3>
+                            <p><strong>Solution:</strong> Try running the manual installation commands above, or restart your terminal and try again.</p>
+                        </div>
+                        <div class="issue">
+                            <h3>Whisper Installation Fails</h3>
+                            <p><strong>Solution:</strong> Try installing Whisper via pipx instead: <code>pipx install openai-whisper</code></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Need Help?</h3>
+                    <p>Check out our <a href="troubleshooting.html">troubleshooting guide</a> or <a href="https://github.com/prasheelsoni/meeting-note-taker/issues">report an issue</a> on GitHub.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

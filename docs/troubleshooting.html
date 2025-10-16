@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshooting - Meeting Note Taker</title>
+    <meta name="description" content="Troubleshooting guide for Meeting Note Taker">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <img src="../assets/icon.svg" alt="Meeting Note Taker" class="logo-icon">
+                <h1>Meeting Note Taker</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="installation.html" class="nav-link">Installation</a>
+                <a href="usage.html" class="nav-link">Usage</a>
+                <a href="troubleshooting.html" class="nav-link active">Troubleshooting</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Troubleshooting</h1>
+                <p class="hero-subtitle">Common issues and solutions for Meeting Note Taker</p>
+            </div>
+        </section>
+
+        <section class="troubleshooting-guide">
+            <div class="container">
+                <div class="guide-content">
+                    <div class="quick-fixes">
+                        <h2>Quick Fixes</h2>
+                        <div class="fix-grid">
+                            <div class="fix-item">
+                                <h3>🔄 Restart the App</h3>
+                                <p>Many issues can be resolved by simply quitting and relaunching the application.</p>
+                            </div>
+                            <div class="fix-item">
+                                <h3>🔧 Check Permissions</h3>
+                                <p>Ensure microphone and screen recording permissions are granted in System Preferences.</p>
+                            </div>
+                            <div class="fix-item">
+                                <h3>🌐 Check Internet</h3>
+                                <p>Verify your internet connection for dependency downloads and model updates.</p>
+                            </div>
+                            <div class="fix-item">
+                                <h3>💾 Free Up Space</h3>
+                                <p>Ensure you have at least 2GB of free disk space for processing.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="common-issues">
+                        <h2>Common Issues</h2>
+                        
+                        <div class="issue-category">
+                            <h3>Installation Issues</h3>
+                            
+                            <div class="issue">
+                                <h4>❌ "Dependencies are missing" error</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> The app shows that required dependencies are not installed.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Click "Install Missing Dependencies" and wait for completion</li>
+                                        <li>Try manual installation using Terminal:
+                                            <div class="code-block">
+                                                <code>brew install python3 ffmpeg sox ollama</code><br>
+                                                <code>pip3 install -U openai-whisper</code>
+                                            </div>
+                                        </li>
+                                        <li>Restart your terminal and try again</li>
+                                        <li>Check if Homebrew is properly installed: <code>brew --version</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue">
+                                <h4>❌ "Whisper: command not found" error</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> Whisper executable cannot be found during transcription.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Install Whisper via pipx: <code>pipx install openai-whisper</code></li>
+                                        <li>Add pipx path to your shell: <code>export PATH="$HOME/.local/bin:$PATH"</code></li>
+                                        <li>Restart the app after installing Whisper</li>
+                                        <li>Check if Whisper is in PATH: <code>which whisper</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue">
+                                <h4>❌ "Ollama service not running" error</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> Ollama service is not available for summarization.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Start Ollama service: <code>ollama serve</code></li>
+                                        <li>Pull the required model: <code>ollama pull llama3</code></li>
+                                        <li>Check if Ollama is running: <code>curl http://localhost:11434/api/tags</code></li>
+                                        <li>Restart Ollama if it's not responding</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="issue-category">
+                            <h3>Permission Issues</h3>
+                            
+                            <div class="issue">
+                                <h4>❌ "Microphone access denied" error</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> The app cannot access your microphone.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Go to System Preferences > Security & Privacy > Privacy > Microphone</li>
+                                        <li>Check the box next to "Meeting Note Taker"</li>
+                                        <li>If the app isn't listed, launch it once and try again</li>
+                                        <li>Restart the app after granting permission</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue">
+                                <h4>❌ "Screen recording permission required" error</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> The app needs screen recording permission for audio capture.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Go to System Preferences > Security & Privacy > Privacy > Screen Recording</li>
+                                        <li>Check the box next to "Meeting Note Taker"</li>
+                                        <li>Click "Open System Settings" in the app if available</li>
+                                        <li>Restart the app after granting permission</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="issue-category">
+                            <h3>Performance Issues</h3>
+                            
+                            <div class="issue">
+                                <h4>🐌 Slow transcription processing</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> Transcription takes a very long time to complete.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Use a smaller Whisper model (tiny or base instead of large)</li>
+                                        <li>Close other applications to free up CPU resources</li>
+                                        <li>Ensure you have sufficient RAM (8GB minimum)</li>
+                                        <li>Check if your Mac is running hot and needs cooling</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue">
+                                <h4>💾 High memory usage</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> The app uses too much memory during processing.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Close other applications during processing</li>
+                                        <li>Use smaller models (tiny Whisper model)</li>
+                                        <li>Restart the app between long recordings</li>
+                                        <li>Consider upgrading your Mac's RAM if possible</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="issue-category">
+                            <h3>Audio Issues</h3>
+                            
+                            <div class="issue">
+                                <h4>🔇 No audio being recorded</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> The app shows recording but no audio is captured.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Check your microphone is working in other applications</li>
+                                        <li>Verify microphone permissions are granted</li>
+                                        <li>Test with a different microphone if available</li>
+                                        <li>Check System Preferences > Sound > Input for microphone levels</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue">
+                                <h4>📢 Poor audio quality</h4>
+                                <div class="issue-content">
+                                    <p><strong>Problem:</strong> Recorded audio is distorted or unclear.</p>
+                                    <p><strong>Solutions:</strong></p>
+                                    <ul>
+                                        <li>Speak closer to the microphone</li>
+                                        <li>Reduce background noise</li>
+                                        <li>Adjust microphone input levels in System Preferences</li>
+                                        <li>Use an external microphone for better quality</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="advanced-troubleshooting">
+                        <h2>Advanced Troubleshooting</h2>
+                        
+                        <div class="advanced-section">
+                            <h3>Debug Mode</h3>
+                            <p>Enable debug logging to get more detailed error information:</p>
+                            <div class="code-block">
+                                <code># Run the app with debug logging</code><br>
+                                <code>DEBUG=1 /Applications/Meeting\ Note\ Taker.app/Contents/MacOS/Meeting\ Note\ Taker</code>
+                            </div>
+                        </div>
+
+                        <div class="advanced-section">
+                            <h3>Reset Application Data</h3>
+                            <p>If the app is behaving unexpectedly, try resetting its data:</p>
+                            <div class="code-block">
+                                <code># Remove app preferences and cache</code><br>
+                                <code>rm -rf ~/Library/Preferences/com.meetingnotetaker.*</code><br>
+                                <code>rm -rf ~/Library/Caches/com.meetingnotetaker.*</code>
+                            </div>
+                        </div>
+
+                        <div class="advanced-section">
+                            <h3>Manual Dependency Check</h3>
+                            <p>Verify all dependencies are working correctly:</p>
+                            <div class="code-block">
+                                <code># Check Python</code><br>
+                                <code>python3 --version</code><br><br>
+                                <code># Check Whisper</code><br>
+                                <code>whisper --help</code><br><br>
+                                <code># Check Ollama</code><br>
+                                <code>ollama list</code><br><br>
+                                <code># Check FFmpeg</code><br>
+                                <code>ffmpeg -version</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="getting-help">
+                        <h2>Getting Help</h2>
+                        <div class="help-options">
+                            <div class="help-option">
+                                <h3>📚 Documentation</h3>
+                                <p>Check our <a href="usage.html">usage guide</a> and <a href="installation.html">installation guide</a> for detailed instructions.</p>
+                            </div>
+                            <div class="help-option">
+                                <h3>🐛 Report Issues</h3>
+                                <p>Found a bug? <a href="https://github.com/prasheelsoni/meeting-note-taker/issues">Report it on GitHub</a> with detailed information about the problem.</p>
+                            </div>
+                            <div class="help-option">
+                                <h3>💬 Community</h3>
+                                <p>Join discussions and get help from other users in our GitHub Discussions.</p>
+                            </div>
+                            <div class="help-option">
+                                <h3>📧 Contact</h3>
+                                <p>For urgent issues or feature requests, you can contact the maintainer directly.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Still Need Help?</h3>
+                    <p>If you can't find a solution here, please <a href="https://github.com/prasheelsoni/meeting-note-taker/issues">open an issue</a> on GitHub with detailed information about your problem.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

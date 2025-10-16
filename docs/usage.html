@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage Guide - Meeting Note Taker</title>
+    <meta name="description" content="Complete usage guide for Meeting Note Taker">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <img src="../assets/icon.svg" alt="Meeting Note Taker" class="logo-icon">
+                <h1>Meeting Note Taker</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="installation.html" class="nav-link">Installation</a>
+                <a href="usage.html" class="nav-link active">Usage</a>
+                <a href="troubleshooting.html" class="nav-link">Troubleshooting</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Usage Guide</h1>
+                <p class="hero-subtitle">Learn how to effectively use Meeting Note Taker for your meetings</p>
+            </div>
+        </section>
+
+        <section class="usage-guide">
+            <div class="container">
+                <div class="guide-content">
+                    <div class="quick-start">
+                        <h2>Quick Start</h2>
+                        <div class="quick-steps">
+                            <div class="quick-step">
+                                <div class="step-icon">🎙️</div>
+                                <h3>Start Recording</h3>
+                                <p>Click the record button to begin capturing audio</p>
+                            </div>
+                            <div class="quick-step">
+                                <div class="step-icon">⏹️</div>
+                                <h3>Stop Recording</h3>
+                                <p>Click stop when your meeting is complete</p>
+                            </div>
+                            <div class="quick-step">
+                                <div class="step-icon">📝</div>
+                                <h3>Get Results</h3>
+                                <p>Receive transcription and summary in your Obsidian vault</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detailed-usage">
+                        <h2>Detailed Usage</h2>
+                        
+                        <div class="usage-section">
+                            <h3>Initial Setup</h3>
+                            <div class="setup-steps">
+                                <div class="setup-step">
+                                    <h4>1. Configure Obsidian Vault</h4>
+                                    <p>Set the path to your Obsidian vault where meeting notes will be saved. This can be done in the app's settings.</p>
+                                </div>
+                                <div class="setup-step">
+                                    <h4>2. Choose Whisper Model</h4>
+                                    <p>Select the appropriate Whisper model based on your needs:</p>
+                                    <ul>
+                                        <li><strong>Tiny:</strong> Fastest, least accurate (good for quick notes)</li>
+                                        <li><strong>Base:</strong> Balanced speed and accuracy (recommended)</li>
+                                        <li><strong>Small:</strong> Better accuracy, slower processing</li>
+                                        <li><strong>Medium:</strong> High accuracy, much slower</li>
+                                        <li><strong>Large:</strong> Best accuracy, slowest processing</li>
+                                    </ul>
+                                </div>
+                                <div class="setup-step">
+                                    <h4>3. Select Llama Model</h4>
+                                    <p>Choose your preferred summarization model (llama3 is recommended for best results).</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="usage-section">
+                            <h3>Recording a Meeting</h3>
+                            <div class="recording-workflow">
+                                <div class="workflow-step">
+                                    <h4>Before Recording</h4>
+                                    <ul>
+                                        <li>Ensure your microphone is working properly</li>
+                                        <li>Test audio levels to avoid clipping</li>
+                                        <li>Close unnecessary applications to free up system resources</li>
+                                        <li>Make sure Ollama service is running (if using local LLM)</li>
+                                    </ul>
+                                </div>
+                                <div class="workflow-step">
+                                    <h4>During Recording</h4>
+                                    <ul>
+                                        <li>Speak clearly and at a moderate pace</li>
+                                        <li>Avoid background noise when possible</li>
+                                        <li>Monitor the recording indicator to ensure audio is being captured</li>
+                                        <li>Note any important timestamps for later reference</li>
+                                    </ul>
+                                </div>
+                                <div class="workflow-step">
+                                    <h4>After Recording</h4>
+                                    <ul>
+                                        <li>Wait for processing to complete (this may take several minutes)</li>
+                                        <li>Review the generated transcription for accuracy</li>
+                                        <li>Check the summary for completeness</li>
+                                        <li>Save or organize the notes in your Obsidian vault</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="usage-section">
+                            <h3>Understanding the Output</h3>
+                            <div class="output-explanation">
+                                <div class="output-type">
+                                    <h4>Transcription</h4>
+                                    <p>The raw text output from Whisper, containing everything that was spoken during the meeting. This includes:</p>
+                                    <ul>
+                                        <li>Speaker identification (when possible)</li>
+                                        <li>Timestamps for different segments</li>
+                                        <li>Punctuation and formatting</li>
+                                        <li>Filler words and pauses</li>
+                                    </ul>
+                                </div>
+                                <div class="output-type">
+                                    <h4>Summary</h4>
+                                    <p>An AI-generated summary created by Llama, including:</p>
+                                    <ul>
+                                        <li>Key discussion points</li>
+                                        <li>Decisions made</li>
+                                        <li>Action items</li>
+                                        <li>Important details</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="usage-section">
+                            <h3>Best Practices</h3>
+                            <div class="best-practices">
+                                <div class="practice">
+                                    <h4>Audio Quality</h4>
+                                    <ul>
+                                        <li>Use a good quality microphone or headset</li>
+                                        <li>Record in a quiet environment when possible</li>
+                                        <li>Test your setup before important meetings</li>
+                                        <li>Consider using external microphones for better quality</li>
+                                    </ul>
+                                </div>
+                                <div class="practice">
+                                    <h4>Meeting Preparation</h4>
+                                    <ul>
+                                        <li>Inform participants that the meeting is being recorded</li>
+                                        <li>Ensure all speakers are audible</li>
+                                        <li>Have a backup recording method for critical meetings</li>
+                                        <li>Test the app with a short recording before important meetings</li>
+                                    </ul>
+                                </div>
+                                <div class="practice">
+                                    <h4>Post-Processing</h4>
+                                    <ul>
+                                        <li>Review transcriptions for accuracy</li>
+                                        <li>Edit summaries to add context or corrections</li>
+                                        <li>Organize notes with tags and folders in Obsidian</li>
+                                        <li>Share relevant sections with team members</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="usage-section">
+                            <h3>Advanced Features</h3>
+                            <div class="advanced-features">
+                                <div class="feature">
+                                    <h4>Custom Models</h4>
+                                    <p>You can use different Whisper and Llama models by modifying the settings. This allows you to optimize for your specific use case.</p>
+                                </div>
+                                <div class="feature">
+                                    <h4>Batch Processing</h4>
+                                    <p>For multiple recordings, you can process them sequentially. The app will queue recordings and process them one by one.</p>
+                                </div>
+                                <div class="feature">
+                                    <h4>Integration with Obsidian</h4>
+                                    <p>Meeting notes are automatically saved with proper formatting and can be linked to other notes in your vault using Obsidian's linking features.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tips-tricks">
+                        <h2>Tips & Tricks</h2>
+                        <div class="tips-grid">
+                            <div class="tip">
+                                <h4>💡 Improve Accuracy</h4>
+                                <p>Speak clearly and avoid overlapping conversations for better transcription accuracy.</p>
+                            </div>
+                            <div class="tip">
+                                <h4>⚡ Speed Up Processing</h4>
+                                <p>Use the "tiny" Whisper model for faster processing when accuracy is less critical.</p>
+                            </div>
+                            <div class="tip">
+                                <h4>🔍 Review Output</h4>
+                                <p>Always review the generated summary and add any missing context or important details.</p>
+                            </div>
+                            <div class="tip">
+                                <h4>📁 Organize Notes</h4>
+                                <p>Use Obsidian tags and folders to organize your meeting notes for easy retrieval.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Need Help?</h3>
+                    <p>Check out our <a href="troubleshooting.html">troubleshooting guide</a> or <a href="https://github.com/prasheelsoni/meeting-note-taker/issues">report an issue</a> on GitHub.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

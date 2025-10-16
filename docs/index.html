@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Note Taker - AI-Powered Meeting Transcription & Summarization</title>
+    <meta name="description" content="A powerful macOS desktop app that records meetings, transcribes them with Whisper, and generates summaries using local Llama models. Everything runs locally for complete privacy.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <img src="../assets/icon.svg" alt="Aura" class="logo-icon">
+                <h1>Aura</h1>
+            </div>
+            <nav class="nav">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#installation" class="nav-link">Installation</a>
+                <a href="#usage" class="nav-link">Usage</a>
+                <a href="#download" class="nav-link">Download</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h2 class="hero-title">AI-Powered Meeting Transcription & Summarization</h2>
+                    <p class="hero-subtitle">Record meetings, get instant transcriptions with Whisper, and generate intelligent summaries using local Llama models. Everything runs locally for complete privacy.</p>
+                    <div class="hero-buttons">
+                        <a href="#download" class="btn btn-primary">Download for macOS</a>
+                        <a href="#installation" class="btn btn-secondary">View Installation Guide</a>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="app-preview">
+                        <div class="app-window">
+                            <div class="app-header">
+                                <div class="window-controls">
+                                    <span class="control red"></span>
+                                    <span class="control yellow"></span>
+                                    <span class="control green"></span>
+                                </div>
+                                <div class="app-title">Meeting Note Taker</div>
+                            </div>
+                            <div class="app-content">
+                                <div class="recording-indicator">
+                                    <div class="pulse-dot"></div>
+                                    <span>Recording...</span>
+                                </div>
+                                <div class="waveform">
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="container">
+                <h2 class="section-title">Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎙️</div>
+                        <h3>High-Quality Recording</h3>
+                        <p>Capture crystal-clear audio from your microphone with professional-grade recording capabilities.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🗣️</div>
+                        <h3>AI Transcription</h3>
+                        <p>Powered by OpenAI's Whisper for accurate speech-to-text conversion with support for multiple languages.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <h3>Smart Summarization</h3>
+                        <p>Generate intelligent meeting summaries using local Llama models - no data leaves your device.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Complete Privacy</h3>
+                        <p>Everything runs locally on your machine. Your meetings never leave your computer.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📝</div>
+                        <h3>Obsidian Integration</h3>
+                        <p>Automatically save transcriptions and summaries to your Obsidian vault for easy organization.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Real-Time Processing</h3>
+                        <p>Get instant feedback and processing status with a beautiful, modern interface.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="installation" class="installation">
+            <div class="container">
+                <h2 class="section-title">Installation</h2>
+                <div class="installation-content">
+                    <div class="installation-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>Download the App</h3>
+                                <p>Download the latest DMG file from the releases page and install it on your Mac.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>Install Dependencies</h3>
+                                <p>The app will automatically check and install required dependencies:</p>
+                                <ul>
+                                    <li><strong>Homebrew</strong> - Package manager</li>
+                                    <li><strong>Python 3</strong> - Runtime for Whisper</li>
+                                    <li><strong>FFmpeg</strong> - Audio processing</li>
+                                    <li><strong>Sox</strong> - Sound processing</li>
+                                    <li><strong>Ollama</strong> - Local LLM runtime</li>
+                                    <li><strong>Whisper</strong> - AI transcription</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>Configure Settings</h3>
+                                <p>Set up your Obsidian vault path and choose your preferred Whisper and Llama models.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>Start Recording</h3>
+                                <p>Grant screen recording permissions and start capturing your meetings!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="usage" class="usage">
+            <div class="container">
+                <h2 class="section-title">How to Use</h2>
+                <div class="usage-content">
+                    <div class="usage-flow">
+                        <div class="flow-step">
+                            <div class="flow-icon">🎙️</div>
+                            <h3>Start Recording</h3>
+                            <p>Click the record button to begin capturing audio from your microphone.</p>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="flow-icon">🗣️</div>
+                            <h3>Whisper Transcribes</h3>
+                            <p>AI converts your speech to text using OpenAI's Whisper model.</p>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="flow-icon">🤖</div>
+                            <h3>Llama Summarizes</h3>
+                            <p>Local Llama model generates intelligent meeting summaries.</p>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="flow-icon">📝</div>
+                            <h3>Save to Obsidian</h3>
+                            <p>Transcriptions and summaries are automatically saved to your vault.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="download" class="download">
+            <div class="container">
+                <h2 class="section-title">Download</h2>
+                <div class="download-content">
+                    <div class="download-card">
+                        <div class="download-icon">💻</div>
+                        <h3>macOS</h3>
+                        <p>Compatible with macOS 10.15+</p>
+                        <a href="https://github.com/ps011/meeting-note-taker/releases/latest" class="btn btn-primary">Download DMG</a>
+                    </div>
+                </div>
+                <div class="system-requirements">
+                    <h3>System Requirements</h3>
+                    <ul>
+                        <li>macOS 10.15 (Catalina) or later</li>
+                        <li>8GB RAM minimum (16GB recommended)</li>
+                        <li>2GB free disk space</li>
+                        <li>Microphone access</li>
+                        <li>Screen recording permission</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Meeting Note Taker</h3>
+                    <p>AI-powered meeting transcription and summarization for macOS.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Links</h3>
+                    <ul>
+                        <li><a href="https://github.com/ps011/meeting-note-taker">GitHub Repository</a></li>
+                        <li><a href="https://github.com/ps011/meeting-note-taker/releases">Releases</a></li>
+                        <li><a href="https://github.com/ps011/meeting-note-taker/issues">Report Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>License</h3>
+                    <p>MIT License - See <a href="https://github.com/ps011/meeting-note-taker/blob/main/LICENSE">LICENSE</a> file for details.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Meeting Note Taker. Built with ❤️ for privacy-conscious users.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
