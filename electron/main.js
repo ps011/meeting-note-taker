@@ -19,7 +19,7 @@ function createWindow() {
       contextIsolation: false,
       enableRemoteModule: true
     },
-    icon: path.join(__dirname, '../assets/icon.png')
+    icon: path.join(__dirname, '../assets/icon.icns')
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
@@ -45,7 +45,7 @@ function createWindow() {
 function createTray() {
   // Create a simple tray icon (you can replace with a proper icon)
   const trayIcon = nativeImage.createFromPath(
-    path.join(__dirname, '../assets/icon.png')
+    path.join(__dirname, '../assets/icon.icns')
   ).resize({ width: 16, height: 16 });
   
   tray = new Tray(trayIcon);
@@ -84,7 +84,7 @@ function createSetupWindow() {
       nodeIntegration: true,
       contextIsolation: false
     },
-    icon: path.join(__dirname, '../assets/icon.png')
+    icon: path.join(__dirname, '../assets/icon.icns')
   });
 
   setupWindow.loadFile(path.join(__dirname, 'setup.html'));
