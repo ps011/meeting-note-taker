@@ -8,6 +8,27 @@ const os = require('os');
 // Import backend modules
 const { MeetingNoteTaker } = require('../src/meetingNoteTaker.js');
 
+// Analytics helper functions
+function trackEvent(eventName, parameters = {}) {
+  if (typeof gtag !== 'undefined') {
+    gtag('event', eventName, parameters);
+  }
+  // Also send to main process for additional tracking
+  ipcRenderer.send('analytics-track-event', eventName, parameters);
+}
+
+function trackPageView(pageName, pageTitle) {
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'page_view', {
+      page_title: pageTitle,
+      page_location: `app://${pageName}`,
+      page_path: `/${pageName}`
+    });
+  }
+  // Also send to main process
+  ipcRenderer.send('analytics-track-page-view', pageName, pageTitle);
+}
+
 // State
 let noteTaker = null;
 let config = null;
@@ -146,6 +167,9 @@ function toggleTheme() {
 
 // Initialize
 async function init() {
+  // Track page view
+  trackPageView('main', 'Main App Window');
+  
   // Load theme first
   loadTheme();
   
@@ -161,8 +185,16 @@ async function init() {
     if (config.obsidianVaultPath) {
       noteTaker = new MeetingNoteTaker(config);
       setStatus('ready', 'Ready');
+      trackEvent('app_ready', {
+        category: 'app_lifecycle',
+        label: 'app_initialized_with_config'
+      });
     } else {
       setStatus('warning', 'Not configured');
+      trackEvent('app_ready', {
+        category: 'app_lifecycle',
+        label: 'app_initialized_without_config'
+      });
     }
   });
   
@@ -189,11 +221,27 @@ function addParticipant(name) {
   participants.push(name);
   renderParticipants();
   participantInput.value = '';
+  
+  // Track participant addition
+  trackEvent('participant_added', {
+    category: 'meeting',
+    label: 'participant_added',
+    custom_parameter_1: name,
+    custom_parameter_2: participants.length
+  });
 }
 
 function removeParticipant(name) {
   participants = participants.filter(p => p !== name);
   renderParticipants();
+  
+  // Track participant removal
+  trackEvent('participant_removed', {
+    category: 'meeting',
+    label: 'participant_removed',
+    custom_parameter_1: name,
+    custom_parameter_2: participants.length
+  });
 }
 
 function renderParticipants() {
@@ -271,9 +319,19 @@ function stopAudioVisualization() {
 function openHistory() {
   if (!config || !config.obsidianVaultPath) {
     alert('Please configure your Obsidian vault in settings first.');
+    trackEvent('history_error', {
+      category: 'navigation',
+      label: 'no_vault_configured'
+    });
     window.location.href = 'setup.html';
     return;
   }
+  
+  // Track history access
+  trackEvent('history_access', {
+    category: 'navigation',
+    label: 'history_opened'
+  });
   
   // Open the vault folder
   shell.openPath(config.obsidianVaultPath);
@@ -284,6 +342,10 @@ recordButton.addEventListener('click', startRecording);
 if (stopButtonInner) stopButtonInner.addEventListener('click', stopRecording);
 if (openSettingsButton) {
   openSettingsButton.addEventListener('click', () => {
+    trackEvent('settings_access', {
+      category: 'navigation',
+      label: 'settings_opened'
+    });
     window.location.href = 'setup.html';
   });
 }
@@ -292,7 +354,15 @@ if (openPermissionsButton) openPermissionsButton.addEventListener('click', openS
 
 // New UI event listeners
 if (historyButton) historyButton.addEventListener('click', openHistory);
-if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+if (themeToggle) themeToggle.addEventListener('click', () => {
+  const isDark = document.documentElement.classList.contains('dark');
+  trackEvent('theme_toggle', {
+    category: 'ui',
+    label: 'theme_changed',
+    custom_parameter_1: isDark ? 'to_light' : 'to_dark'
+  });
+  toggleTheme();
+});
 
 // Participant input handling
 if (participantInput) {
@@ -309,10 +379,22 @@ async function startRecording() {
   try {
     if (!noteTaker) {
       alert('Please configure Obsidian vault in Settings first');
+      trackEvent('recording_error', {
+        category: 'recording',
+        label: 'no_vault_configured'
+      });
       return;
     }
     
     const title = meetingTitleInput.value.trim() || 'Meeting';
+    
+    // Track recording start
+    trackEvent('recording_start', {
+      category: 'recording',
+      label: 'recording_started',
+      custom_parameter_1: title,
+      custom_parameter_2: participants.length
+    });
     
     setStatus('recording', 'Recording');
     
@@ -362,6 +444,13 @@ async function startRecording() {
       errorMessage += error.message;
       errorMessage += '\n\nCheck the console for more details.';
     }
+    
+    // Track recording error
+    trackEvent('recording_error', {
+      category: 'recording',
+      label: error.name || 'unknown_error',
+      custom_parameter_1: error.message
+    });
     
     alert(errorMessage);
     setStatus('ready', 'Ready');
@@ -641,6 +730,15 @@ async function stopRecording() {
   try {
     if (!isRecording) return;
     
+    const recordingDuration = Date.now() - startTime;
+    
+    // Track recording stop
+    trackEvent('recording_stop', {
+      category: 'recording',
+      label: 'recording_stopped',
+      value: Math.round(recordingDuration / 1000) // duration in seconds
+    });
+    
     setStatus('processing', 'Processing');
     
     // Stop audio visualization
@@ -696,13 +794,31 @@ async function stopRecording() {
     const result = await noteTaker.stopMeeting({
       onTranscriptionComplete: () => {
         updateProgress(3, 'active', 'Generating summary...');
+        trackEvent('transcription_complete', {
+          category: 'transcription',
+          label: 'transcription_completed',
+          value: Math.round(recordingDuration / 1000)
+        });
       },
       onSummarizationComplete: () => {
         updateProgress(4, 'active', 'Saving to vault...');
+        trackEvent('summarization_complete', {
+          category: 'summarization',
+          label: 'summarization_completed',
+          value: Math.round(recordingDuration / 1000)
+        });
       }
     });
     
     updateProgress(5, 'completed', '✓ Saved successfully!');
+    
+    // Track successful meeting completion
+    trackEvent('meeting_complete', {
+      category: 'meeting',
+      label: 'meeting_saved_successfully',
+      value: Math.round(recordingDuration / 1000),
+      custom_parameter_1: result.notePath ? 'note_saved' : 'no_note_path'
+    });
     
     setStatus('ready', 'Ready');
     
@@ -730,6 +846,14 @@ async function stopRecording() {
     
   } catch (error) {
     console.error('Stop recording error:', error);
+    
+    // Track processing error
+    trackEvent('processing_error', {
+      category: 'processing',
+      label: 'stop_recording_failed',
+      custom_parameter_1: error.message,
+      custom_parameter_2: error.name || 'unknown_error'
+    });
     
     // Show detailed error in status
     let errorMsg = error.message;

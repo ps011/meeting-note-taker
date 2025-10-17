@@ -3,6 +3,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const Config = require('./config');
 const DependencyChecker = require('./dependencyChecker');
+const analytics = require('./analytics');
 
 let mainWindow;
 let setupWindow;
@@ -99,20 +100,27 @@ function createSetupWindow() {
 }
 
 app.whenReady().then(() => {
+  // Track app start
+  analytics.trackAppStart();
+  
   // Check if setup is completed
   if (Config.isSetupCompleted()) {
     createWindow();
     createTray();
+    analytics.trackPageView('main', 'Main App Window');
   } else {
     createSetupWindow();
+    analytics.trackPageView('setup', 'Setup Wizard');
   }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       if (Config.isSetupCompleted()) {
         createWindow();
+        analytics.trackPageView('main', 'Main App Window');
       } else {
         createSetupWindow();
+        analytics.trackPageView('setup', 'Setup Wizard');
       }
     }
   });
@@ -126,6 +134,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   app.isQuitting = true;
+  analytics.trackAppClose();
 });
 
 // IPC Handlers for communication with renderer process
@@ -181,6 +190,14 @@ ipcMain.on('setup-complete', (event, config) => {
   // Save configuration
   Config.save(config);
   
+  // Track setup completion
+  analytics.trackEvent('setup_complete', {
+    category: 'setup',
+    label: 'setup_wizard_completed',
+    custom_parameter_1: config.obsidianVaultPath ? 'vault_configured' : 'no_vault',
+    custom_parameter_2: config.llamaModel || 'default_model'
+  });
+  
   // Ensure vault exists
   if (config.obsidianVaultPath) {
     const fs = require('fs');
@@ -198,6 +215,7 @@ ipcMain.on('setup-complete', (event, config) => {
   // Create main window
   createWindow();
   createTray();
+  analytics.trackPageView('main', 'Main App Window');
 });
 
 ipcMain.on('save-config', (event, config) => {
