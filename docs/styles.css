@@ -134,12 +134,20 @@ body {
     transform: translateY(-2px);
 }
 
-/* App Preview */
-.app-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* Hero App Image */
+.hero-app-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
 }
+
+.hero-app-image:hover {
+    transform: translateY(-5px);
+}
+
+/* App Preview (keeping for reference but not used) */
 
 .app-window {
     background: #f8fafc;
