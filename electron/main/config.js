@@ -3,7 +3,7 @@ const Store = require('electron-store');
 // Initialize persistent storage
 const store = new Store({
   defaults: {
-    obsidianVaultPath: '',
+    notesPath: '',
     llamaApiUrl: 'http://localhost:11434/api/generate',
     llamaModel: 'llama3',
     whisperModel: 'base',
@@ -23,7 +23,7 @@ class Config {
    * Check if setup is completed
    */
   static isSetupCompleted() {
-    return store.get('setupCompleted') && store.get('obsidianVaultPath');
+    return store.get('setupCompleted') && store.get('notesPath');
   }
 
   /**
@@ -31,7 +31,7 @@ class Config {
    */
   static getAll() {
     return {
-      obsidianVaultPath: store.get('obsidianVaultPath'),
+      notesPath: store.get('notesPath'),
       llamaApiUrl: store.get('llamaApiUrl'),
       llamaModel: store.get('llamaModel'),
       whisperModel: store.get('whisperModel'),
@@ -47,8 +47,8 @@ class Config {
    * Save configuration
    */
   static save(config) {
-    if (config.obsidianVaultPath !== undefined) {
-      store.set('obsidianVaultPath', config.obsidianVaultPath);
+    if (config.notesPath !== undefined) {
+      store.set('notesPath', config.notesPath);
     }
     if (config.llamaApiUrl !== undefined) {
       store.set('llamaApiUrl', config.llamaApiUrl);

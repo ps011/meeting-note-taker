@@ -2,23 +2,23 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Obsidian writer service for saving meeting notes
+ * Note writer service for saving meeting notes
  */
-class ObsidianWriter {
-  constructor(vaultPath) {
-    this.vaultPath = vaultPath;
-    this.notesFolderPath = vaultPath;
+class NoteWriter {
+  constructor(notesPath) {
+    this.notesPath = notesPath;
+    this.notesFolderPath = notesPath;
   }
 
   /**
-   * Save meeting notes to Obsidian vault
+   * Save meeting notes
    */
   saveNote(summary, transcription, meetingTitle = 'Meeting') {
     try {
-      console.log('📝 Saving meeting notes to Obsidian...');
+      console.log('📝 Saving meeting notes...');
 
-      if (!fs.existsSync(this.vaultPath)) {
-        throw new Error(`Obsidian vault not found at: ${this.vaultPath}`);
+      if (!fs.existsSync(this.notesPath)) {
+        throw new Error(`Notes folder not found at: ${this.notesPath}`);
       }
 
       if (!fs.existsSync(this.notesFolderPath)) {
@@ -41,7 +41,7 @@ class ObsidianWriter {
 
       return filePath;
     } catch (error) {
-      console.error('❌ Failed to save to Obsidian:', error.message);
+      console.error('❌ Failed to save notes:', error.message);
       throw error;
     }
   }
@@ -133,5 +133,5 @@ ${transcription}
   }
 }
 
-module.exports = { ObsidianWriter };
+module.exports = { NoteWriter };
 

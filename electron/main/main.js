@@ -23,7 +23,7 @@ function createWindow() {
     icon: path.join(__dirname, '../assets/icon.icns')
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.loadFile(path.join(__dirname, '../ui/index.html'));
 
   // Open DevTools in development mode
   if (process.argv.includes('--dev')) {
@@ -88,7 +88,7 @@ function createSetupWindow() {
     icon: path.join(__dirname, '../assets/icon.icns')
   });
 
-  setupWindow.loadFile(path.join(__dirname, 'setup.html'));
+  setupWindow.loadFile(path.join(__dirname, '../ui/setup.html'));
 
   if (process.argv.includes('--dev')) {
     setupWindow.webContents.openDevTools();
@@ -156,7 +156,7 @@ ipcMain.on('minimize-to-tray', () => {
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory', 'createDirectory'],
-    title: 'Select Obsidian Vault Folder',
+    title: 'Select Notes Folder',
     buttonLabel: 'Select Folder'
   });
   
@@ -194,15 +194,15 @@ ipcMain.on('setup-complete', (event, config) => {
   analytics.trackEvent('setup_complete', {
     category: 'setup',
     label: 'setup_wizard_completed',
-    custom_parameter_1: config.obsidianVaultPath ? 'vault_configured' : 'no_vault',
+    custom_parameter_1: config.notesPath ? 'notes_path_configured' : 'no_notes_path',
     custom_parameter_2: config.llamaModel || 'default_model'
   });
   
-  // Ensure vault exists
-  if (config.obsidianVaultPath) {
+  // Ensure notes folder exists
+  if (config.notesPath) {
     const fs = require('fs');
-    if (!fs.existsSync(config.obsidianVaultPath)) {
-      fs.mkdirSync(config.obsidianVaultPath, { recursive: true });
+    if (!fs.existsSync(config.notesPath)) {
+      fs.mkdirSync(config.notesPath, { recursive: true });
     }
   }
   
@@ -222,11 +222,11 @@ ipcMain.on('save-config', (event, config) => {
   // Save configuration without changing windows
   Config.save(config);
   
-  // Ensure vault exists
-  if (config.obsidianVaultPath) {
+  // Ensure notes folder exists
+  if (config.notesPath) {
     const fs = require('fs');
-    if (!fs.existsSync(config.obsidianVaultPath)) {
-      fs.mkdirSync(config.obsidianVaultPath, { recursive: true });
+    if (!fs.existsSync(config.notesPath)) {
+      fs.mkdirSync(config.notesPath, { recursive: true });
     }
   }
 });
@@ -411,5 +411,105 @@ ipcMain.handle('run-full-dependency-setup', async (event, options) => {
   });
   
   return result;
+});
+
+// Recording history handlers
+ipcMain.handle('get-all-recordings', async (event) => {
+  try {
+    const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
+    const config = Config.getAll();
+    
+    if (!config || !config.notesPath) {
+      return { success: false, error: 'Not configured' };
+    }
+    
+    const noteTaker = new MeetingNoteTaker(config);
+    const recordings = noteTaker.getAllRecordings();
+    
+    return { success: true, recordings: recordings };
+  } catch (error) {
+    console.error('Error getting recordings:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-recording', async (event, recordingId) => {
+  try {
+    const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
+    const config = Config.getAll();
+    
+    if (!config || !config.notesPath) {
+      return { success: false, error: 'Not configured' };
+    }
+    
+    const noteTaker = new MeetingNoteTaker(config);
+    const recording = noteTaker.getRecording(recordingId);
+    
+    if (!recording) {
+      return { success: false, error: 'Recording not found' };
+    }
+    
+    return { success: true, recording: recording };
+  } catch (error) {
+    console.error('Error getting recording:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('retry-transcription', async (event, recordingId) => {
+  try {
+    const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
+    const config = Config.getAll();
+    
+    if (!config || !config.notesPath) {
+      return { success: false, error: 'Not configured' };
+    }
+    
+    const noteTaker = new MeetingNoteTaker(config);
+    const result = await noteTaker.retryTranscription(recordingId);
+    
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Error retrying transcription:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('delete-recording', async (event, recordingId) => {
+  try {
+    const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
+    const config = Config.getAll();
+    
+    if (!config || !config.notesPath) {
+      return { success: false, error: 'Not configured' };
+    }
+    
+    const noteTaker = new MeetingNoteTaker(config);
+    const success = noteTaker.deleteRecording(recordingId);
+    
+    return { success: success };
+  } catch (error) {
+    console.error('Error deleting recording:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('update-recording', async (event, recordingId, updates) => {
+  try {
+    const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
+    const config = Config.getAll();
+    
+    if (!config || !config.notesPath) {
+      return { success: false, error: 'Not configured' };
+    }
+    
+    const noteTaker = new MeetingNoteTaker(config);
+    const success = noteTaker.updateRecordingPath(recordingId, updates);
+    
+    return { success: success };
+  } catch (error) {
+    console.error('Error updating recording:', error);
+    return { success: false, error: error.message };
+  }
 });
 

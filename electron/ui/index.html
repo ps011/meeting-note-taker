@@ -125,7 +125,7 @@
     }
     
     body {
-      -webkit-app-region: drag;
+      -webkit-app-region: no-drag;
       user-select: none;
       transition: background 0.3s ease;
       background: linear-gradient(135deg, #F5F1E8 0%, #FFE5E5 25%, #E0F5E9 50%, #E5F3FF 75%, #FFE5F1 100%);
@@ -133,6 +133,10 @@
     
     .dark body {
       background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
+    }
+    
+    #appHeader {
+      -webkit-app-region: drag;
     }
     
     button, input, a, .no-drag {
@@ -150,41 +154,7 @@
   </style>
 </head>
 <body class="min-h-screen font-sans antialiased overflow-y-auto" id="appBody">
-  <!-- Header -->
-  <header class="flex items-center justify-between px-8 pt-12 pb-6 border-b border-gray-200 dark:border-gray-700">
-    <div class="flex items-center gap-3 text-gray-800 dark:text-white">
-      <svg width="175" height="40" viewBox="0 0 370 100" xmlns="http://www.w3.org/2000/svg" class="w-54 h-10">
-        <g fill="currentColor">
-          <path d="M25.04899,10.19723h-4.52647l-37.31581,73.3068v4.08487h76.50846v-4.08487zM6.28068,72.13265l16.11866,-31.57492l14.79384,31.57492z"/>
-          <path d="M165.31449,58.99483v-48.7976h-15.45625v48.908h0.1104c-0.1104,3.86406 -1.54563,7.39692 -4.30567,10.15697c-2.76005,2.76005 -6.2929,4.19527 -10.15697,4.19527c-3.86406,0 -7.50732,-1.43522 -10.26737,-4.19527c-2.76005,-2.76005 -4.30567,-6.40331 -4.30567,-10.26737v-48.7976h-15.45625v48.908c0.1104,16.44987 13.46902,29.80849 30.02929,29.80849c16.44987,0 29.91889,-13.35862 29.91889,-29.91889z"/>
-          <path d="M211.51765,10.08683v77.39167h15.45625v-47.69358l7.72813,16.67067v0.1104l14.46264,31.02291h16.44987l-16.11866,-33.12054c9.60496,-1.65603 15.67706,-11.70259 15.67706,-21.08675c0,-12.80661 -10.37777,-23.29478 -23.18438,-23.29478zM235.36444,25.54308h6.62411c4.30567,0 7.72813,3.53286 7.72813,7.83853c0,3.97447 -2.98085,7.17612 -6.73451,7.61772z"/>
-          <path d="M350.12713,10.19723h-4.52647l-37.31581,73.3068v4.08487h76.50846v-4.08487zM331.35882,72.13265l16.11866,-31.57492l14.79384,31.57492z"/>
-        </g>
-      </svg>
-    </div>
-    <div class="flex items-center gap-3">
-      <button id="openSettings" class="p-2.5 rounded-xl bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 transition-all duration-300 no-drag backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50" title="Settings">
-        <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-      </button>
-      <button id="themeToggle" class="p-2.5 rounded-xl bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 transition-all duration-300 no-drag backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50" title="Toggle theme">
-        <!-- Sun icon for dark mode -->
-        <svg id="sunIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-        </svg>
-        <!-- Moon icon for light mode -->
-        <svg id="moonIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Main Content -->
   <main class="flex-1 flex flex-col items-center justify-center px-8 pb-20">
-    <!-- Title Section -->
     <div class="text-center mt-8 mb-8">
       <h2 class="text-4xl font-bold text-gray-800 dark:text-white mb-4">Take notes</h2>
       <p class="text-gray-600 dark:text-gray-300 text-sm max-w-2xl mx-auto">
@@ -193,11 +163,9 @@
       </p>
     </div>
 
-      <!-- Recording Button -->
       <div class="mb-4 relative flex flex-col items-center">
       
       <div class="flex items-center justify-center relative">
-        <!-- Large Record Button (idle state) -->
         <button 
           id="recordButton"
           class="w-40 h-40 rounded-full bg-cream dark:bg-gray-700 shadow-2xl flex items-center justify-center hover:scale-105 transition-all duration-500 no-drag"
@@ -207,15 +175,12 @@
           </svg>
         </button>
         
-        <!-- Compact Stop Button with Timer/Status Inside -->
         <div id="stopButton" class="hidden flex-col items-center gap-3 no-drag">
-          <!-- Timer/Status above -->
           <div id="timer" class="px-4 py-2 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300">
             <div id="timerDisplay" class="text-xl font-mono font-bold text-gray-800 dark:text-white">00:00</div>
             <div id="statusMessage" class="hidden text-base font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap"></div>
           </div>
           
-          <!-- Smaller stop button -->
           <button 
             id="stopButtonInner"
             class="w-24 h-24 rounded-full bg-cream dark:bg-gray-800 shadow-2xl flex items-center justify-center hover:scale-105 transition-all duration-300 recording-pulse"
@@ -223,7 +188,6 @@
             <div id="stopButtonContent" class="w-8 h-8 bg-primary rounded-lg"></div>
           </button>
           
-          <!-- Audio bars below -->
           <div id="recordingVisual" class="flex items-center gap-2">
             <div class="waveform flex items-center gap-1.5">
               <div class="bar w-1 bg-primary rounded-full"></div>
@@ -237,9 +201,7 @@
       </div>
     </div>
 
-    <!-- Form Card -->
     <div class="glass-card rounded-3xl p-8 mt-4 w-full max-w-2xl no-drag">
-      <!-- Meeting Title -->
       <div class="mb-6">
         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Meeting Title (Optional)</label>
         <input 
@@ -250,12 +212,10 @@
         />
       </div>
 
-      <!-- Participants -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Participants (Optional)</label>
         <div class="bg-white/60 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl p-3">
           <div class="flex flex-wrap gap-2 mb-2" id="participantTags">
-            <!-- Participant tags will be added here -->
           </div>
           <input 
             type="text" 
@@ -267,7 +227,6 @@
       </div>
     </div>
 
-    <!-- Permission Banner -->
     <div id="permissionBanner" class="hidden mt-6 max-w-2xl w-full p-4 rounded-2xl bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700">
       <div class="flex items-start gap-3">
         <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,18 +247,8 @@
 
   </main>
 
-  <!-- Floating History Button (Bottom Right) -->
-  <button id="historyButton" class="fixed bottom-8 right-8 px-6 py-3 rounded-full bg-white/80 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-700 backdrop-blur-sm shadow-xl border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-200 font-medium transition-all duration-300 hover:scale-105 no-drag flex items-center gap-2" title="View History">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <span>History</span>
-  </button>
-
-  <!-- Hidden elements for settings -->
   <button id="checkPermissionButton" class="hidden"></button>
   
-  <!-- Hidden config info for functionality -->
   <div class="hidden">
     <span id="vaultPath"></span>
     <span id="modelName"></span>
@@ -308,6 +257,7 @@
     <span id="actionLabel"></span>
   </div>
 
-  <script src="renderer.js"></script>
+  <script src="../renderer/layout.js"></script>
+  <script src="../renderer/renderer.js"></script>
 </body>
 </html>

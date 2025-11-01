@@ -21,37 +21,22 @@
     body {
       -webkit-app-region: no-drag;
     }
+    #appHeader {
+      -webkit-app-region: drag;
+    }
     button, input, select {
       -webkit-app-region: no-drag;
     }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-screen overflow-y-auto transition-colors">
+  <!-- Header will be loaded by layout.js -->
+  
   <div class="max-w-2xl mx-auto p-8 min-h-screen">
-    <!-- Header -->
+    <!-- Welcome Section -->
     <div class="text-center mb-12">
-      <div class="flex justify-center items-center gap-4 mb-4 text-gray-800 dark:text-white">
-        <svg width="175" height="40" viewBox="0 0 370 100" xmlns="http://www.w3.org/2000/svg" class="w-54 h-10">
-          <g fill="currentColor">
-            <path d="M25.04899,10.19723h-4.52647l-37.31581,73.3068v4.08487h76.50846v-4.08487zM6.28068,72.13265l16.11866,-31.57492l14.79384,31.57492z"/>
-            <path d="M165.31449,58.99483v-48.7976h-15.45625v48.908h0.1104c-0.1104,3.86406 -1.54563,7.39692 -4.30567,10.15697c-2.76005,2.76005 -6.2929,4.19527 -10.15697,4.19527c-3.86406,0 -7.50732,-1.43522 -10.26737,-4.19527c-2.76005,-2.76005 -4.30567,-6.40331 -4.30567,-10.26737v-48.7976h-15.45625v48.908c0.1104,16.44987 13.46902,29.80849 30.02929,29.80849c16.44987,0 29.91889,-13.35862 29.91889,-29.91889z"/>
-            <path d="M211.51765,10.08683v77.39167h15.45625v-47.69358l7.72813,16.67067v0.1104l14.46264,31.02291h16.44987l-16.11866,-33.12054c9.60496,-1.65603 15.67706,-11.70259 15.67706,-21.08675c0,-12.80661 -10.37777,-23.29478 -23.18438,-23.29478zM235.36444,25.54308h6.62411c4.30567,0 7.72813,3.53286 7.72813,7.83853c0,3.97447 -2.98085,7.17612 -6.73451,7.61772z"/>
-            <path d="M350.12713,10.19723h-4.52647l-37.31581,73.3068v4.08487h76.50846v-4.08487zM331.35882,72.13265l16.11866,-31.57492l14.79384,31.57492z"/>
-          </g>
-        </svg>
-        
-        <!-- Theme Switcher -->
-        <button id="themeToggle" class="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 transition" title="Toggle theme">
-          <svg id="sunIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-          </svg>
-          <svg id="moonIcon" class="w-5 h-5 text-gray-700 dark:text-gray-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-          </svg>
-        </button>
-      </div>
       <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Welcome to Meeting Note Taker</h1>
-      <p class="text-gray-600 dark:text-gray-400">Let's set up your Obsidian vault to get started</p>
+      <p class="text-gray-600 dark:text-gray-400">Let's set up where your meeting notes will be saved</p>
     </div>
 
     <!-- Main Setup Card -->
@@ -110,11 +95,11 @@
           </div>
 
           <!-- Info Note -->
-          <div class="p-4 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg">
-            <p class="text-sm text-purple-800 dark:text-purple-200">
+          <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p class="text-sm text-yellow-800 dark:text-yellow-200">
               <strong>ℹ️ Note:</strong> This app requires Whisper, Ollama, FFmpeg, Sox, and Python. We'll automatically check and install missing tools using Homebrew.
             </p>
-            <p class="text-xs text-purple-700 dark:text-purple-300 mt-2">
+            <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
               Installing Homebrew (if needed) may prompt for your system password - this is normal and safe.
             </p>
           </div>
@@ -123,11 +108,11 @@
 
       <div class="border-t dark:border-gray-700 mb-8"></div>
 
-      <!-- Step 1: Obsidian Vault -->
+      <!-- Step 1: Notes Folder -->
       <div class="mb-8">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
-            1
+            📁
           </div>
           <div>
             <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Meeting Notes Folder</h2>
@@ -140,7 +125,7 @@
             <input 
               type="text" 
               id="vaultPath" 
-              placeholder="/Users/you/Documents/ObsidianVault/Meetings"
+              placeholder="/Users/you/Documents/MeetingNotes"
               class="flex-1 px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition placeholder-gray-400 dark:placeholder-gray-500"
             />
             <button 
@@ -247,16 +232,10 @@
       >
         Complete Setup
       </button>
-    </div>
-
-    <!-- Info Note -->
-    <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-      <p class="text-sm text-blue-800 dark:text-blue-200">
-        <strong>💡 Tip:</strong> You can always change these settings later from the Settings menu.
-      </p>
-    </div>
+    </div>    
   </div>
 
-  <script src="setup.js"></script>
+  <script src="../renderer/layout.js"></script>
+  <script src="../renderer/setup.js"></script>
 </body>
 </html>

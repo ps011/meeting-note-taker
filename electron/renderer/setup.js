@@ -34,23 +34,19 @@ let dependenciesChecked = false;
 let allDependenciesInstalled = false;
 let missingDependencies = [];
 
-// Load theme
 loadTheme();
 
-// Initialize dependency checker on load
-initializeDependencyChecker();
-
-// Theme Management
 function loadTheme() {
-  const theme = localStorage.getItem('theme') || 'light';
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
+  if (window.Layout?.loadTheme) {
+    window.Layout.loadTheme();
   } else {
-    document.documentElement.classList.remove('dark');
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }
 }
 
-// Dependency Management Functions
+initializeDependencyChecker();
+
 function initializeDependencyChecker() {
   // Show initial state
   dependencyStatus.innerHTML = `
@@ -161,15 +157,7 @@ async function checkDependencies() {
 
     if (result.allInstalled) {
       overallProgress.classList.add('hidden');
-      installDepsButton.classList.add('hidden');
-      
-      dependencyStatus.insertAdjacentHTML('beforeend', `
-        <div class="p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
-          <p class="text-sm text-green-800 dark:text-green-200 font-medium">
-            ✅ All dependencies are installed!
-          </p>
-        </div>
-      `);
+      installDepsButton.classList.add('hidden');  
     } else {
       installDepsButton.classList.remove('hidden');
       
@@ -283,24 +271,19 @@ checkDepsButton.addEventListener('click', checkDependencies);
 installDepsButton.addEventListener('click', installDependencies);
 
 function toggleTheme() {
-  const isDark = document.documentElement.classList.contains('dark');
-  if (isDark) {
-    document.documentElement.classList.remove('dark');
-    localStorage.setItem('theme', 'light');
+  if (window.Layout?.toggleTheme) {
+    window.Layout.toggleTheme();
   } else {
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
+    const isDark = document.documentElement.classList.contains('dark');
+    document.documentElement.classList.toggle('dark', !isDark);
+    localStorage.setItem('theme', !isDark ? 'dark' : 'light');
   }
 }
 
-// Event listener for theme toggle
-themeToggle.addEventListener('click', toggleTheme);
-
-// Load existing configuration
 ipcRenderer.invoke('get-config').then((config) => {
-  // Set vault path from config or use default
-  const configuredPath = config.obsidianVaultPath;
-  const defaultPath = path.join(os.homedir(), 'Documents', 'ObsidianVault', 'Meetings');
+  // Set notes path from config or use default
+  const configuredPath = config.notesPath;
+  const defaultPath = path.join(os.homedir(), 'Documents', 'MeetingNotes');
   selectedPath = configuredPath || defaultPath;
   vaultPathInput.value = selectedPath;
   checkVaultPath(selectedPath);
@@ -325,17 +308,20 @@ ipcRenderer.invoke('get-config').then((config) => {
   }
 });
 
-// Browse for folder
 browseButton.addEventListener('click', async () => {
   const result = await ipcRenderer.invoke('select-folder');
   if (result) {
     selectedPath = result;
     vaultPathInput.value = result;
     checkVaultPath(result);
+    
+    // Save the path to config immediately
+    ipcRenderer.send('save-config', {
+      notesPath: result
+    });
   }
 });
 
-// Check if vault exists
 function checkVaultPath(path) {
   const exists = fs.existsSync(path);
   
@@ -354,52 +340,35 @@ function checkVaultPath(path) {
   }
 }
 
-// Update the complete button state based on all requirements
 function updateCompleteButtonState(vaultReady) {
-  // Can complete if vault is ready AND either all dependencies are installed OR dependencies were checked
+  // Can complete if notes folder is ready AND either all dependencies are installed OR dependencies were checked
   const canComplete = vaultReady && (allDependenciesInstalled || dependenciesChecked);
   completeButton.disabled = !canComplete;
   
   if (!canComplete && !allDependenciesInstalled && dependenciesChecked) {
     completeButton.title = 'Please install all dependencies first';
   } else if (!canComplete && !vaultReady) {
-    completeButton.title = 'Please select or create a vault folder first';
+    completeButton.title = 'Please select or create a notes folder first';
   } else {
     completeButton.title = '';
   }
 }
 
-// Create vault
 createVaultButton.addEventListener('click', () => {
   try {
     // Create directory
     fs.mkdirSync(selectedPath, { recursive: true });
     
-    // Create .obsidian folder
-    const obsidianDir = path.join(selectedPath, '.obsidian');
-    fs.mkdirSync(obsidianDir, { recursive: true });
-    
-    // Create basic config
-    const appearanceConfig = {
-      theme: 'obsidian',
-      baseFontSize: 16
-    };
-    fs.writeFileSync(
-      path.join(obsidianDir, 'appearance.json'),
-      JSON.stringify(appearanceConfig, null, 2)
-    );
-    
     vaultStatus.className = 'p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200';
-    vaultStatus.textContent = '✓ Vault created successfully!';
+    vaultStatus.textContent = '✓ Folder created successfully!';
     createVaultButton.classList.add('hidden');
     updateCompleteButtonState(true);
   } catch (error) {
     vaultStatus.className = 'p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-200';
-    vaultStatus.textContent = `❌ Failed to create vault: ${error.message}`;
+    vaultStatus.textContent = `❌ Failed to create folder: ${error.message}`;
   }
 });
 
-// Toggle advanced settings
 advancedToggle.addEventListener('click', () => {
   advancedSettings.classList.toggle('hidden');
   const icon = advancedToggle.querySelector('svg');
@@ -423,7 +392,6 @@ advancedToggle.addEventListener('click', () => {
   }
 });
 
-// Skip setup
 skipButton.addEventListener('click', () => {
   // Check if we're in the initial setup or settings mode
   ipcRenderer.invoke('get-config').then((currentConfig) => {
@@ -437,10 +405,9 @@ skipButton.addEventListener('click', () => {
   });
 });
 
-// Complete setup
 completeButton.addEventListener('click', () => {
   const config = {
-    obsidianVaultPath: selectedPath,
+    notesPath: selectedPath,
     llamaModel: llamaModelInput.value.trim() || 'llama3',
     whisperModel: whisperModelSelect.value,
     llamaApiUrl: llamaApiUrlInput.value.trim() || 'http://localhost:11434/api/generate',

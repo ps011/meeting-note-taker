@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recording History - Aura</title>
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-80MG7FLW61"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-80MG7FLW61');
+  </script>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#EF4444',
+            cream: '#F5F1E8',
+            dark: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      -webkit-app-region: no-drag;
+      user-select: none;
+      background: linear-gradient(135deg, #F5F1E8 0%, #FFE5E5 25%, #E0F5E9 50%, #E5F3FF 75%, #FFE5F1 100%);
+    }
+    
+    .dark body {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
+    }
+    
+    #appHeader {
+      -webkit-app-region: drag;
+    }
+    
+    button, input, a, .no-drag {
+      -webkit-app-region: no-drag;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+    
+    .dark .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+  <!-- Header will be loaded by layout.js -->
+
+  <main class="px-8 py-8">
+    <div class="max-w-6xl mx-auto">
+      <div id="loadingState" class="hidden glass-card rounded-3xl p-8 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-300">Loading recordings...</p>
+      </div>
+
+      <div id="emptyState" class="hidden glass-card rounded-3xl p-12 text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">No recordings yet</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">Start recording meetings to see them here</p>
+        <button id="startRecordingButton" class="px-6 py-3 bg-primary text-white rounded-xl hover:bg-red-600 transition-colors no-drag">
+          Start Recording
+        </button>
+      </div>
+
+      <div id="recordingsList" class="space-y-4"></div>
+    </div>
+  </main>
+
+  <script src="../renderer/layout.js"></script>
+  <script src="../renderer/history.js"></script>
+</body>
+</html>

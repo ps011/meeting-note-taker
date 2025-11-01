@@ -3,17 +3,12 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-// Note: desktopCapturer is accessed via IPC from main process in Electron 28+
+const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
 
-// Import backend modules
-const { MeetingNoteTaker } = require('../src/meetingNoteTaker.js');
-
-// Analytics helper functions
 function trackEvent(eventName, parameters = {}) {
   if (typeof gtag !== 'undefined') {
     gtag('event', eventName, parameters);
   }
-  // Also send to main process for additional tracking
   ipcRenderer.send('analytics-track-event', eventName, parameters);
 }
 
@@ -25,18 +20,14 @@ function trackPageView(pageName, pageTitle) {
       page_path: `/${pageName}`
     });
   }
-  // Also send to main process
   ipcRenderer.send('analytics-track-page-view', pageName, pageTitle);
 }
 
-// State
 let noteTaker = null;
 let config = null;
 let isRecording = false;
 let startTime = null;
 let timerInterval = null;
-
-// Audio recording state
 let mediaRecorder = null;
 let audioChunks = [];
 let recordingStream = null;
@@ -44,8 +35,7 @@ let audioContext = null;
 let mergedStream = null;
 let analyser = null;
 let animationFrameId = null;
-
-// DOM Elements
+let participants = [];
 const recordButton = document.getElementById('recordButton');
 const stopButton = document.getElementById('stopButton');
 const stopButtonContent = document.getElementById('stopButtonContent');
@@ -64,58 +54,26 @@ const permissionBanner = document.getElementById('permissionBanner');
 const openPermissionsButton = document.getElementById('openPermissionsButton');
 const checkPermissionButton = document.getElementById('checkPermissionButton');
 
-// New UI elements
-const historyButton = document.getElementById('historyButton');
 const participantInput = document.getElementById('participantInput');
 const participantTags = document.getElementById('participantTags');
 const themeToggle = document.getElementById('themeToggle');
 const stopButtonInner = document.getElementById('stopButtonInner');
 
-// Participants state
-let participants = [];
-
-// Permission Management
 async function checkPermissions() {
   try {
-    console.log('🔍 Checking screen recording permission...');
     const result = await ipcRenderer.invoke('check-screen-recording-permission');
-    
-    console.log('Permission check result:', result);
     
     if (result.granted) {
       permissionBanner.classList.add('hidden');
-      alert(`✅ Screen Recording Permission Granted!\n\nFound ${result.sourceCount} screen source(s).\n\nYou can now start recording meetings.`);
     } else {
       permissionBanner.classList.remove('hidden');
-      
       const isDev = process.env.NODE_ENV !== 'production';
-      let message = '❌ Screen Recording Permission NOT Granted\n\n';
-      
-      message += `Status: ${result.status}\n`;
-      message += `Screen sources found: ${result.sourceCount || 0}\n\n`;
+      let message = 'Screen Recording Permission Required\n\n';
       
       if (isDev) {
-        message += 'Running in DEVELOPMENT mode.\n\n';
-        message += 'Grant permission to:\n';
-        message += '• Terminal (or iTerm2/your terminal app)\n';
-        message += '  OR\n';
-        message += '• Electron\n\n';
-        message += 'Important: After granting permission, you MUST:\n';
-        message += '1. Fully quit Terminal (Cmd+Q)\n';
-        message += '2. Relaunch Terminal\n';
-        message += '3. Run npm start again\n';
+        message += 'Grant permission to Terminal/Electron, then fully quit and relaunch.';
       } else {
-        message += 'Grant permission to:\n';
-        message += '• Meeting Note Taker\n\n';
-        message += 'Important: After granting permission, you MUST:\n';
-        message += '1. Fully quit this app (Cmd+Q)\n';
-        message += '2. Relaunch the app\n';
-      }
-      
-      message += '\nClick "Open System Settings" below to grant permission.';
-      
-      if (result.error) {
-        message += '\n\nError details: ' + result.error;
+        message += 'Grant permission to Meeting Note Taker in System Settings, then quit and relaunch the app.';
       }
       
       alert(message);
@@ -129,80 +87,54 @@ async function checkPermissions() {
 async function openSystemPreferences() {
   try {
     await ipcRenderer.invoke('open-system-preferences');
-    
-    // Show helpful message
     setTimeout(() => {
-      alert('📱 System Settings Opening...\n\n' +
-            '1. Go to Privacy & Security → Screen Recording\n' +
-            '2. Enable the app in the list\n' +
-            '3. Come back and click "Check Permissions" again\n' +
-            '4. Fully quit and restart this app\n\n' +
-            'Note: You may need to manually navigate to Screen Recording.');
+      alert('System Settings Opening...\n\nGo to Privacy & Security → Screen Recording, enable the app, then fully quit and restart.');
     }, 500);
   } catch (error) {
     console.error('Error opening System Settings:', error);
   }
 }
 
-// Theme Management
 function loadTheme() {
-  const theme = localStorage.getItem('theme') || 'light';
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
+  if (window.Layout?.loadTheme) {
+    window.Layout.loadTheme();
   } else {
-    document.documentElement.classList.remove('dark');
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }
 }
 
 function toggleTheme() {
-  const isDark = document.documentElement.classList.contains('dark');
-  if (isDark) {
-    document.documentElement.classList.remove('dark');
-    localStorage.setItem('theme', 'light');
+  if (window.Layout?.toggleTheme) {
+    window.Layout.toggleTheme();
   } else {
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
+    const isDark = document.documentElement.classList.contains('dark');
+    document.documentElement.classList.toggle('dark', !isDark);
+    localStorage.setItem('theme', !isDark ? 'dark' : 'light');
   }
 }
 
-// Initialize
 async function init() {
-  // Track page view
   trackPageView('main', 'Main App Window');
-  
-  // Load theme first
   loadTheme();
-  
-  // Get configuration
   ipcRenderer.send('get-config');
   
   ipcRenderer.on('config-data', (event, data) => {
     config = data;
-    if (vaultPath) vaultPath.textContent = config.obsidianVaultPath || 'Not configured';
+    if (vaultPath) vaultPath.textContent = config.notesPath || 'Not configured';
     if (modelName) modelName.textContent = config.llamaModel || 'Not configured';
     
-    // Initialize MeetingNoteTaker
-    if (config.obsidianVaultPath) {
+    if (config.notesPath) {
       noteTaker = new MeetingNoteTaker(config);
       setStatus('ready', 'Ready');
-      trackEvent('app_ready', {
-        category: 'app_lifecycle',
-        label: 'app_initialized_with_config'
-      });
     } else {
       setStatus('warning', 'Not configured');
-      trackEvent('app_ready', {
-        category: 'app_lifecycle',
-        label: 'app_initialized_without_config'
-      });
     }
   });
   
-  // Check permissions on load
   setTimeout(checkPermissionsOnLoad, 1000);
 }
 
-// Check permissions silently on load
 async function checkPermissionsOnLoad() {
   try {
     const result = await ipcRenderer.invoke('check-screen-recording-permission');
@@ -210,38 +142,20 @@ async function checkPermissionsOnLoad() {
       permissionBanner.classList.remove('hidden');
     }
   } catch (error) {
-    console.error('Error checking permissions on load:', error);
+    console.error('Error checking permissions:', error);
   }
 }
 
-// Participant Management
 function addParticipant(name) {
   if (!name || participants.includes(name)) return;
-  
   participants.push(name);
   renderParticipants();
   participantInput.value = '';
-  
-  // Track participant addition
-  trackEvent('participant_added', {
-    category: 'meeting',
-    label: 'participant_added',
-    custom_parameter_1: name,
-    custom_parameter_2: participants.length
-  });
 }
 
 function removeParticipant(name) {
   participants = participants.filter(p => p !== name);
   renderParticipants();
-  
-  // Track participant removal
-  trackEvent('participant_removed', {
-    category: 'meeting',
-    label: 'participant_removed',
-    custom_parameter_1: name,
-    custom_parameter_2: participants.length
-  });
 }
 
 function renderParticipants() {
@@ -257,10 +171,8 @@ function renderParticipants() {
   `).join('');
 }
 
-// Make removeParticipant available globally for onclick
 window.removeParticipant = removeParticipant;
 
-// Audio Visualization
 function updateAudioBars() {
   if (!analyser || !recordingVisual || recordingVisual.classList.contains('hidden')) {
     return;
@@ -315,56 +227,53 @@ function stopAudioVisualization() {
   }
 }
 
-// History Handler  
 function openHistory() {
-  if (!config || !config.obsidianVaultPath) {
-    alert('Please configure your Obsidian vault in settings first.');
-    trackEvent('history_error', {
-      category: 'navigation',
-      label: 'no_vault_configured'
-    });
+  if (!config?.notesPath) {
+    alert('Please configure your notes folder in settings first.');
     window.location.href = 'setup.html';
     return;
   }
-  
-  // Track history access
-  trackEvent('history_access', {
-    category: 'navigation',
-    label: 'history_opened'
-  });
-  
-  // Open the vault folder
-  shell.openPath(config.obsidianVaultPath);
+  shell.openPath(config.notesPath);
 }
 
-// Event Listeners
+function openRecordings() {
+  if (!config?.notesPath) {
+    alert('Please configure your notes folder in settings first.');
+    window.location.href = 'setup.html';
+    return;
+  }
+  window.location.href = 'history.html';
+}
+
 recordButton.addEventListener('click', startRecording);
 if (stopButtonInner) stopButtonInner.addEventListener('click', stopRecording);
-if (openSettingsButton) {
-  openSettingsButton.addEventListener('click', () => {
-    trackEvent('settings_access', {
-      category: 'navigation',
-      label: 'settings_opened'
-    });
-    window.location.href = 'setup.html';
-  });
-}
 if (checkPermissionButton) checkPermissionButton.addEventListener('click', checkPermissions);
 if (openPermissionsButton) openPermissionsButton.addEventListener('click', openSystemPreferences);
 
-// New UI event listeners
-if (historyButton) historyButton.addEventListener('click', openHistory);
-if (themeToggle) themeToggle.addEventListener('click', () => {
-  const isDark = document.documentElement.classList.contains('dark');
-  trackEvent('theme_toggle', {
-    category: 'ui',
-    label: 'theme_changed',
-    custom_parameter_1: isDark ? 'to_light' : 'to_dark'
-  });
-  toggleTheme();
-});
+function setupLayoutButtonListeners() {
+  const openSettingsButton = document.getElementById('openSettings');
+  if (openSettingsButton) {
+    openSettingsButton.addEventListener('click', () => {
+      window.location.href = 'setup.html';
+    });
+  }
+  
+  const recordingsButton = document.getElementById('recordingsButton');
+  if (recordingsButton) {
+    recordingsButton.addEventListener('click', openRecordings);
+  }
+  
+  const historyButton = document.getElementById('historyButton');
+  if (historyButton) {
+    historyButton.addEventListener('click', openHistory);
+  }
+}
 
-// Participant input handling
+window.addEventListener('layoutLoaded', setupLayoutButtonListeners);
+if (document.readyState !== 'loading') {
+  setTimeout(setupLayoutButtonListeners, 100);
+}
+
 if (participantInput) {
   participantInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -374,83 +283,43 @@ if (participantInput) {
   });
 }
 
-// Start Recording
 async function startRecording() {
   try {
     if (!noteTaker) {
-      alert('Please configure Obsidian vault in Settings first');
-      trackEvent('recording_error', {
-        category: 'recording',
-        label: 'no_vault_configured'
-      });
+      alert('Please configure notes folder in Settings first');
       return;
     }
     
     const title = meetingTitleInput.value.trim() || 'Meeting';
     
-    // Track recording start
-    trackEvent('recording_start', {
-      category: 'recording',
-      label: 'recording_started',
-      custom_parameter_1: title,
-      custom_parameter_2: participants.length
-    });
-    
     setStatus('recording', 'Recording');
-    
-    // UI Updates - show compact recording state
     recordButton.classList.add('hidden');
     stopButton.classList.remove('hidden');
-    stopButton.classList.add('flex'); // Show the flex container
+    stopButton.classList.add('flex');
     meetingTitleInput.disabled = true;
     
-    // Start recording with microphone
     await startMicrophoneRecording();
-    
-    // Start audio visualization
     updateAudioBars();
-    
-    // Initialize meeting in backend (creates temp file path)
     await noteTaker.startMeeting(title);
     
     isRecording = true;
     startTime = Date.now();
     startTimer();
-    
   } catch (error) {
     console.error('Recording error:', error);
-    
-    // Stop visualization if it was started
     stopAudioVisualization();
     
     let errorMessage = 'Failed to start recording.\n\n';
     
     if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-      errorMessage += '⚠️ Microphone Permission Required\n\n';
-      errorMessage += 'Steps:\n';
-      errorMessage += '1. Open System Settings\n';
-      errorMessage += '2. Go to Privacy & Security → Microphone\n';
-      errorMessage += '3. Enable this app\n';
-      errorMessage += '4. Restart this app\n\n';
-      errorMessage += '📝 Note: Check the console for system audio setup info.\n';
-      errorMessage += 'The app will work with microphone only if no virtual audio device is installed.';
+      errorMessage += 'Microphone Permission Required\n\n';
+      errorMessage += 'Go to System Settings → Privacy & Security → Microphone, enable this app, then restart.';
     } else if (error.name === 'NotFoundError') {
-      errorMessage += '⚠️ No microphone found\n\n';
-      errorMessage += 'Please check:\n';
-      errorMessage += '• Microphone is connected\n';
-      errorMessage += '• Microphone is selected in System Settings → Sound → Input\n';
+      errorMessage += 'No microphone found\n\n';
+      errorMessage += 'Check that your microphone is connected and selected in System Settings → Sound → Input';
     } else {
-      errorMessage += '⚠️ Error:\n\n';
       errorMessage += error.message;
-      errorMessage += '\n\nCheck the console for more details.';
     }
-    
-    // Track recording error
-    trackEvent('recording_error', {
-      category: 'recording',
-      label: error.name || 'unknown_error',
-      custom_parameter_1: error.message
-    });
     
     alert(errorMessage);
     setStatus('ready', 'Ready');
@@ -458,94 +327,50 @@ async function startRecording() {
   }
 }
 
-// Start microphone recording with system audio (Enhanced approach for headphones)
 async function startMicrophoneRecording() {
   try {
-    console.log('🎙️ Starting audio recording (microphone + system audio)...');
-    console.log('📚 Using enhanced audio capture with headphone support\n');
-    
-    // Step 1: Enumerate all audio input devices
-    console.log('🔍 Enumerating audio devices...');
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioInputs = devices.filter(device => device.kind === 'audioinput');
     
-    console.log(`📊 Found ${audioInputs.length} audio input devices:`);
-    audioInputs.forEach((device, index) => {
-      console.log(`  ${index + 1}. ${device.label || 'Unknown device'} (${device.deviceId.substring(0, 20)}...)`);
-    });
-    
-    // Step 2: Detect virtual audio devices and audio interfaces
     const virtualDevices = audioInputs.filter(device => {
       const label = device.label.toLowerCase();
-      return label.includes('blackhole') || 
-             label.includes('soundflower') || 
-             label.includes('virtual') ||
-             label.includes('loopback') ||
-             label.includes('aggregate') ||
-             label.includes('multi-output');
+      return label.includes('blackhole') || label.includes('soundflower') || 
+             label.includes('virtual') || label.includes('loopback') ||
+             label.includes('aggregate') || label.includes('multi-output');
     });
     
-    // Step 3: Detect headphone/audio interface devices
     const headphoneDevices = audioInputs.filter(device => {
       const label = device.label.toLowerCase();
-      return label.includes('headphone') || 
-             label.includes('airpods') ||
-             label.includes('bluetooth') ||
-             label.includes('usb audio') ||
-             label.includes('audio interface') ||
-             label.includes('focusrite') ||
-             label.includes('scarlett') ||
-             label.includes('apollo') ||
-             label.includes('rme') ||
-             label.includes('motu');
-    });
-    
-    console.log(`\n🎧 Detected ${headphoneDevices.length} headphone/audio interface device(s):`);
-    headphoneDevices.forEach((device, index) => {
-      console.log(`  ${index + 1}. ${device.label}`);
+      return label.includes('headphone') || label.includes('airpods') ||
+             label.includes('bluetooth') || label.includes('usb audio') ||
+             label.includes('audio interface') || label.includes('focusrite') ||
+             label.includes('scarlett') || label.includes('apollo') ||
+             label.includes('rme') || label.includes('motu');
     });
     
     let systemAudioStream = null;
     let systemAudioSource = 'none';
     
-    if (virtualDevices.length > 0) {
-      console.log(`\n✅ Found ${virtualDevices.length} virtual audio device(s) for system audio:`);
-      virtualDevices.forEach((device, index) => {
-        console.log(`  ${index + 1}. ${device.label}`);
-      });
-      
-      // Try virtual devices first (preferred for system audio)
-      for (const virtualDevice of virtualDevices) {
-        console.log(`\n🔊 Attempting to use "${virtualDevice.label}" for system audio capture`);
-        
-        try {
-          systemAudioStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              deviceId: { exact: virtualDevice.deviceId },
-              echoCancellation: false,
-              noiseSuppression: false,
-              autoGainControl: false
-            },
-            video: false
-          });
-          systemAudioSource = virtualDevice.label;
-          console.log(`✅ System audio stream obtained from virtual device: ${virtualDevice.label}`);
-          break; // Success, stop trying other devices
-        } catch (error) {
-          console.warn(`⚠️ Failed to get system audio from ${virtualDevice.label}:`, error.message);
-          continue; // Try next device
-        }
+    for (const virtualDevice of virtualDevices) {
+      try {
+        systemAudioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            deviceId: { exact: virtualDevice.deviceId },
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          },
+          video: false
+        });
+        systemAudioSource = virtualDevice.label;
+        break;
+      } catch (error) {
+        continue;
       }
     }
     
-    // Step 4: If virtual devices failed and headphones are connected, try alternative approaches
     if (!systemAudioStream && headphoneDevices.length > 0) {
-      console.log('\n🔄 Virtual devices failed, trying headphone audio interface approach...');
-      
-      // Try to get system audio through headphone device (if it supports it)
       for (const headphoneDevice of headphoneDevices) {
-        console.log(`\n🎧 Attempting to use "${headphoneDevice.label}" for system audio capture`);
-        
         try {
           systemAudioStream = await navigator.mediaDevices.getUserMedia({
             audio: {
@@ -557,21 +382,15 @@ async function startMicrophoneRecording() {
             video: false
           });
           systemAudioSource = headphoneDevice.label;
-          console.log(`✅ System audio stream obtained from headphone device: ${headphoneDevice.label}`);
           break;
         } catch (error) {
-          console.warn(`⚠️ Failed to get system audio from ${headphoneDevice.label}:`, error.message);
           continue;
         }
       }
     }
     
-    // Step 5: Final fallback - try to get any available audio input
     if (!systemAudioStream) {
-      console.log('\n🔄 Trying fallback approach - attempting to capture from any available audio input...');
-      
       try {
-        // Try to get audio without specifying device (let browser choose)
         systemAudioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: false,
@@ -581,30 +400,11 @@ async function startMicrophoneRecording() {
           video: false
         });
         systemAudioSource = 'browser-selected';
-        console.log('✅ System audio stream obtained from browser-selected device');
       } catch (error) {
-        console.warn('⚠️ Fallback system audio capture failed:', error.message);
+        // No system audio available, will record mic only
       }
     }
     
-    // Step 6: Provide user guidance based on results
-    if (!systemAudioStream) {
-      console.warn('\n⚠️ No system audio capture available');
-      console.warn('💡 System audio will NOT be captured - only microphone audio will be recorded.');
-      console.warn('\n📖 To enable system audio capture with headphones:');
-      console.warn('   1. Install BlackHole: brew install blackhole-2ch');
-      console.warn('   2. Configure macOS Audio MIDI Setup:');
-      console.warn('      • Create Multi-Output Device');
-      console.warn('      • Include both headphones and BlackHole');
-      console.warn('      • Set as system output device');
-      console.warn('   3. Or use audio interface with loopback capability');
-      console.warn('   4. Restart this app after configuration\n');
-    } else {
-      console.log(`\n🎉 System audio capture successful using: ${systemAudioSource}`);
-    }
-    
-    // Step 7: Get microphone audio (separate from system audio)
-    console.log('\n📱 Requesting microphone access...');
     const micStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -614,54 +414,23 @@ async function startMicrophoneRecording() {
       video: false
     });
     
-    console.log('✅ Microphone access granted');
-    
-    // Step 8: Merge streams if we have system audio, otherwise just use microphone
     if (systemAudioStream) {
-      console.log('\n🔀 Merging microphone + system audio streams using Web Audio API...');
       audioContext = new AudioContext();
-      
-      // Create audio sources
       const systemAudioSourceNode = audioContext.createMediaStreamSource(systemAudioStream);
       const micSourceNode = audioContext.createMediaStreamSource(micStream);
-      
-      // Create a destination for the merged audio
       const destination = audioContext.createMediaStreamDestination();
       
-      // Connect both sources to the destination
       systemAudioSourceNode.connect(destination);
       micSourceNode.connect(destination);
       
-      console.log('✅ Audio streams merged successfully');
-      
-      // Store the merged stream
       mergedStream = destination.stream;
-      
-      // Keep track of original streams for cleanup
       recordingStream = {
         systemAudioStream,
         micStream,
         getTracks: () => [...systemAudioStream.getTracks(), ...micStream.getTracks()]
       };
-      
-      // Log stream info
-      const systemAudioTracks = systemAudioStream.getAudioTracks();
-      const micAudioTracks = micStream.getAudioTracks();
-      const mergedAudioTracks = mergedStream.getAudioTracks();
-      
-      console.log(`\n📊 Stream Summary:`);
-      console.log(`   • System audio tracks: ${systemAudioTracks.length} (source: ${systemAudioSource})`);
-      console.log(`   • Microphone tracks: ${micAudioTracks.length}`);
-      console.log(`   • Merged tracks: ${mergedAudioTracks.length}`);
-      
-      if (systemAudioTracks.length > 0) {
-        console.log(`   • System: ${systemAudioTracks[0].label} (enabled: ${systemAudioTracks[0].enabled})`);
-      }
-      if (micAudioTracks.length > 0) {
-        console.log(`   • Microphone: ${micAudioTracks[0].label} (enabled: ${micAudioTracks[0].enabled})`);
-      }
     } else {
-      console.log('\n🎤 Recording microphone only (no system audio)');
+      audioContext = new AudioContext();
       mergedStream = micStream;
       recordingStream = {
         micStream,
@@ -669,22 +438,14 @@ async function startMicrophoneRecording() {
       };
     }
     
-    // Step 9: Set up audio visualization
-    console.log('\n🎨 Setting up audio visualization...');
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256; // Higher = more frequency detail
-    analyser.smoothingTimeConstant = 0.8; // Smoother animations
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.8;
     
-    // Connect the merged stream to the analyser for visualization
     const visualizationSource = audioContext.createMediaStreamSource(mergedStream);
     visualizationSource.connect(analyser);
     
-    console.log('✅ Audio visualization ready');
-    
-    // Step 10: Create MediaRecorder with the stream (merged or mic-only)
     audioChunks = [];
-    let dataReceived = 0;
-    
     mediaRecorder = new MediaRecorder(mergedStream, {
       mimeType: 'audio/webm;codecs=opus'
     });
@@ -692,68 +453,33 @@ async function startMicrophoneRecording() {
     mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         audioChunks.push(event.data);
-        dataReceived += event.data.size;
       }
     };
     
     mediaRecorder.onerror = (event) => {
-      console.error('❌ MediaRecorder error:', event.error);
+      console.error('MediaRecorder error:', event.error);
     };
     
-    mediaRecorder.onstart = () => {
-      console.log('\n▶️ MediaRecorder started');
-    };
-    
-    mediaRecorder.onstop = () => {
-      console.log('⏹️ MediaRecorder stopped');
-      console.log(`📊 Captured: ${audioChunks.length} chunks, ${(dataReceived / 1024 / 1024).toFixed(2)} MB total`);
-    };
-    
-    // Start recording with timeslice to collect data every second
     mediaRecorder.start(1000);
-    
-    if (systemAudioStream) {
-      console.log(`✅ Recording started: Microphone + System Audio (source: ${systemAudioSource})`);
-    } else {
-      console.log('✅ Recording started: Microphone Only');
-      console.log('💡 For system audio with headphones, configure BlackHole Multi-Output Device');
-    }
-    
   } catch (error) {
     console.error('Failed to start audio recording:', error);
     throw error;
   }
 }
 
-// Stop Recording
 async function stopRecording() {
   try {
     if (!isRecording) return;
     
-    const recordingDuration = Date.now() - startTime;
-    
-    // Track recording stop
-    trackEvent('recording_stop', {
-      category: 'recording',
-      label: 'recording_stopped',
-      value: Math.round(recordingDuration / 1000) // duration in seconds
-    });
-    
     setStatus('processing', 'Processing');
-    
-    // Stop audio visualization
     stopAudioVisualization();
-    
-    // Stop timer and show status
     stopTimer();
     
-    // UI Updates
     if (stopButtonInner) {
       stopButtonInner.disabled = true;
       stopButtonInner.classList.remove('recording-pulse');
     }
     
-    // Turn stop button into a loader
     if (stopButtonContent) {
       stopButtonContent.className = '';
       stopButtonContent.innerHTML = `
@@ -764,70 +490,42 @@ async function stopRecording() {
       `;
     }
     
-    // Show first progress message
     updateProgress(1, 'active', 'Saving audio...');
-    
-    // Stop and save microphone recording
     const audioPath = await stopMicrophoneRecording();
     
     updateProgress(2, 'active', 'Transcribing audio...');
     
-    // Override the audio path in noteTaker to use our recorded file
-    if (noteTaker.currentAudioPath && audioPath) {
-      // Replace the temp audio file with our recorded one
-      if (fs.existsSync(audioPath)) {
-        const destPath = noteTaker.currentAudioPath;
-        const destDir = path.dirname(destPath);
-        
-        // Ensure destination directory exists
-        if (!fs.existsSync(destDir)) {
-          fs.mkdirSync(destDir, { recursive: true });
-        }
-        
-        // Copy our recording to the expected location
-        fs.copyFileSync(audioPath, destPath);
-        console.log(`✅ Audio file copied to: ${destPath}`);
+    if (noteTaker.currentAudioPath && audioPath && fs.existsSync(audioPath)) {
+      const destPath = noteTaker.currentAudioPath;
+      const destDir = path.dirname(destPath);
+      
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
       }
+      
+      fs.copyFileSync(audioPath, destPath);
     }
     
-    // Stop and process with backend
     const result = await noteTaker.stopMeeting({
       onTranscriptionComplete: () => {
         updateProgress(3, 'active', 'Generating summary...');
-        trackEvent('transcription_complete', {
-          category: 'transcription',
-          label: 'transcription_completed',
-          value: Math.round(recordingDuration / 1000)
-        });
       },
       onSummarizationComplete: () => {
         updateProgress(4, 'active', 'Saving to vault...');
-        trackEvent('summarization_complete', {
-          category: 'summarization',
-          label: 'summarization_completed',
-          value: Math.round(recordingDuration / 1000)
-        });
       }
     });
     
     updateProgress(5, 'completed', '✓ Saved successfully!');
-    
-    // Track successful meeting completion
-    trackEvent('meeting_complete', {
-      category: 'meeting',
-      label: 'meeting_saved_successfully',
-      value: Math.round(recordingDuration / 1000),
-      custom_parameter_1: result.notePath ? 'note_saved' : 'no_note_path'
-    });
-    
     setStatus('ready', 'Ready');
     
-    // Clean up temp audio file
-    if (audioPath && fs.existsSync(audioPath)) {
-      fs.unlinkSync(audioPath);
+    if (result.recordingId && noteTaker.currentAudioPath && fs.existsSync(noteTaker.currentAudioPath)) {
+      try {
+        await ipcRenderer.invoke('update-recording', result.recordingId, { audioPath: noteTaker.currentAudioPath });
+      } catch (error) {
+        console.warn('Failed to update recording history:', error);
+      }
     }
     
-    // Show success notification
     setTimeout(() => {
       const notification = new Notification('Aura - Meeting Recorder', {
         body: 'Meeting notes have been saved successfully!',
@@ -839,7 +537,6 @@ async function stopRecording() {
       };
     }, 500);
     
-    // Reset after a delay to show success message
     setTimeout(() => {
       resetUI();
     }, 2000);
@@ -847,31 +544,20 @@ async function stopRecording() {
   } catch (error) {
     console.error('Stop recording error:', error);
     
-    // Track processing error
-    trackEvent('processing_error', {
-      category: 'processing',
-      label: 'stop_recording_failed',
-      custom_parameter_1: error.message,
-      custom_parameter_2: error.name || 'unknown_error'
-    });
-    
-    // Show detailed error in status
     let errorMsg = error.message;
     if (errorMsg.includes('Transcription failed')) {
       updateProgress(0, 'error', 'Transcription failed');
     } else if (errorMsg.includes('no content')) {
       updateProgress(0, 'error', 'No audio content captured');
     } else {
-      updateProgress(0, 'error', `${errorMsg.substring(0, 50)}`);
+      updateProgress(0, 'error', errorMsg.substring(0, 50));
     }
-  
     
     setStatus('ready', 'Ready');
     setTimeout(resetUI, 5000);
   }
 }
 
-// Stop microphone recording and save to file (Vibe-style cleanup)
 async function stopMicrophoneRecording() {
   return new Promise((resolve, reject) => {
     try {
@@ -880,25 +566,14 @@ async function stopMicrophoneRecording() {
         return;
       }
       
-      console.log('\n⏹️ Stopping audio recording (microphone + system audio)...');
-      
       mediaRecorder.onstop = async () => {
         try {
-          console.log(`🔄 Processing ${audioChunks.length} audio chunks...`);
-          
-          // Create blob from audio chunks
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          console.log(`📦 Created audio blob: ${(audioBlob.size / 1024 / 1024).toFixed(2)} MB`);
           
           if (audioBlob.size === 0) {
-            console.warn('\n⚠️ WARNING: Audio blob is empty! No audio data was captured.');
-            console.warn('💡 Possible reasons:');
-            console.warn('   1. No audio was playing during recording');
-            console.warn('   2. Virtual audio device not properly configured');
-            console.warn('   3. Microphone permission not granted');
+            console.warn('Audio blob is empty - no audio data was captured');
           }
           
-          // Save to temp file
           const tempDir = path.join(os.tmpdir(), 'meeting-note-taker');
           if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
@@ -907,38 +582,23 @@ async function stopMicrophoneRecording() {
           const timestamp = Date.now();
           const audioPath = path.join(tempDir, `recording-${timestamp}.webm`);
           
-          // Convert blob to buffer and save
           const buffer = Buffer.from(await audioBlob.arrayBuffer());
           fs.writeFileSync(audioPath, buffer);
           
-          const fileStats = fs.statSync(audioPath);
-          console.log(`✅ Audio saved to: ${audioPath}`);
-          console.log(`📁 File size: ${(fileStats.size / 1024).toFixed(2)} KB`);
-          
-          // Stop all tracks from both streams
           if (recordingStream) {
-            console.log('\n🔇 Stopping all audio tracks...');
-            recordingStream.getTracks().forEach(track => {
-              console.log(`   • Stopping: ${track.label}`);
-              track.stop();
-            });
+            recordingStream.getTracks().forEach(track => track.stop());
           }
           
-          // Close audio context (important for proper cleanup)
           if (audioContext) {
-            console.log('🔌 Closing Web Audio context...');
             await audioContext.close();
             audioContext = null;
           }
           
-          // Clean up all references
           mediaRecorder = null;
           audioChunks = [];
           recordingStream = null;
           mergedStream = null;
           analyser = null;
-          
-          console.log('✅ All audio resources cleaned up\n');
           
           resolve(audioPath);
         } catch (error) {
@@ -948,7 +608,6 @@ async function stopMicrophoneRecording() {
       };
       
       mediaRecorder.stop();
-      
     } catch (error) {
       console.error('Failed to stop recording:', error);
       reject(error);
@@ -956,7 +615,6 @@ async function stopMicrophoneRecording() {
   });
 }
 
-// Timer
 function startTimer() {
   timerInterval = setInterval(() => {
     const elapsed = Date.now() - startTime;
@@ -973,7 +631,6 @@ function stopTimer() {
   }
 }
 
-// UI Updates
 function setStatus(type, text) {
   if (statusText) statusText.textContent = text;
   
@@ -1080,11 +737,9 @@ function resetUI() {
   }
 }
 
-// Request notification permission
 if (Notification.permission === 'default') {
   Notification.requestPermission();
 }
 
-// Initialize the app
 init();
 

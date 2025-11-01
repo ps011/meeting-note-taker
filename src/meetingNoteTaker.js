@@ -4,7 +4,8 @@ const os = require('os');
 const { AudioCapture } = require('./audioCapture.js');
 const { TranscriptionService } = require('./transcription.js');
 const { LlamaSummarizer } = require('./summarizer.js');
-const { ObsidianWriter } = require('./obsidianWriter.js');
+const { NoteWriter } = require('./noteWriter.js');
+const { RecordingHistory } = require('./recordingHistory.js');
 
 /**
  * Main meeting note taker orchestrator
@@ -15,7 +16,9 @@ class MeetingNoteTaker {
     this.audioCapture = null;
     this.transcriptionService = new TranscriptionService(config.whisperModel || 'base');
     this.summarizer = new LlamaSummarizer(config.llamaApiUrl, config.llamaModel);
-    this.obsidianWriter = new ObsidianWriter(config.obsidianVaultPath, config.notesFolder);
+    this.noteWriter = new NoteWriter(config.notesPath, config.notesFolder);
+    this.recordingHistory = new RecordingHistory();
+    this.currentRecording = null;
     this.currentMeetingTitle = null;
     this.currentAudioPath = null;
   }
@@ -38,7 +41,16 @@ class MeetingNoteTaker {
 
       // Generate audio file path
       const timestamp = Date.now();
-      this.currentAudioPath = path.join(tempDir, `meeting-${timestamp}.wav`);
+      this.currentAudioPath = path.join(tempDir, `meeting-${timestamp}.webm`);
+
+      // Add to recording history
+      this.currentRecording = this.recordingHistory.addRecording({
+        title: meetingTitle,
+        audioPath: this.currentAudioPath,
+        timestamp: timestamp
+      });
+
+      console.log(`📝 Recording ID: ${this.currentRecording.id}`);
 
       // Initialize audio capture
       this.audioCapture = new AudioCapture(
@@ -56,6 +68,7 @@ class MeetingNoteTaker {
         success: true,
         message: 'Meeting recording started',
         audioPath: this.currentAudioPath,
+        recordingId: this.currentRecording.id
       };
     } catch (error) {
       console.error('\n❌ Failed to start meeting:', error.message);
@@ -69,6 +82,11 @@ class MeetingNoteTaker {
   async stopMeeting(callbacks = {}) {
     try {
       console.log('\n⏹️  Stopping Meeting Recording\n');
+
+      // Update status to processing
+      if (this.currentRecording) {
+        this.recordingHistory.updateRecording(this.currentRecording.id, { status: 'processing' });
+      }
 
       // Stop recording
       if (this.audioCapture) {
@@ -98,6 +116,12 @@ class MeetingNoteTaker {
       const transcription = await this.transcriptionService.transcribe(this.currentAudioPath);
       
       if (!transcription || transcription.length < 10) {
+        if (this.currentRecording) {
+          this.recordingHistory.updateRecording(this.currentRecording.id, { 
+            status: 'failed',
+            error: 'Transcription failed or produced no content'
+          });
+        }
         throw new Error('Transcription failed or produced no content');
       }
 
@@ -115,16 +139,25 @@ class MeetingNoteTaker {
         callbacks.onSummarizationComplete();
       }
 
-      // Step 3: Save to Obsidian
-      console.log('\nStep 3/3: Saving to Obsidian vault...');
-      const notePath = this.obsidianWriter.saveNote(
+      // Step 3: Save notes
+      console.log('\nStep 3/3: Saving notes...');
+      const notePath = this.noteWriter.saveNote(
         summary,
         transcription,
         this.currentMeetingTitle
       );
 
-      // Cleanup temp audio file (optional)
-      this.cleanupTempFiles();
+      // Update recording with successful results
+      if (this.currentRecording) {
+        this.recordingHistory.updateRecording(this.currentRecording.id, {
+          status: 'completed',
+          notePath: notePath,
+          error: null
+        });
+      }
+
+      // DON'T cleanup temp audio file - keep it for history
+      // this.cleanupTempFiles();
 
       console.log('\n✅ Meeting Processing Complete!\n');
       console.log(`📁 Note saved to: ${notePath}\n`);
@@ -134,11 +167,118 @@ class MeetingNoteTaker {
         transcription,
         summary,
         notePath,
+        recordingId: this.currentRecording?.id
       };
     } catch (error) {
       console.error('\n❌ Failed to process meeting:', error.message);
+      
+      // Update recording status to failed
+      if (this.currentRecording) {
+        this.recordingHistory.updateRecording(this.currentRecording.id, {
+          status: 'failed',
+          error: error.message
+        });
+      }
+      
       throw error;
     }
+  }
+
+  /**
+   * Retry transcription for a failed recording
+   * @param {string} recordingId - The ID of the recording to retry
+   */
+  async retryTranscription(recordingId) {
+    try {
+      const recording = this.recordingHistory.getRecording(recordingId);
+      
+      if (!recording) {
+        throw new Error('Recording not found');
+      }
+
+      if (!recording.audioPath || !fs.existsSync(recording.audioPath)) {
+        throw new Error('Audio file not found');
+      }
+
+      console.log(`\n🔄 Retrying transcription for recording: ${recordingId}\n`);
+
+      // Update status to processing
+      this.recordingHistory.updateRecording(recordingId, { 
+        status: 'processing',
+        error: null 
+      });
+
+      // Transcribe
+      const transcription = await this.transcriptionService.transcribe(recording.audioPath);
+      
+      if (!transcription || transcription.length < 10) {
+        throw new Error('Transcription failed or produced no content');
+      }
+
+      // Summarize
+      const summary = await this.summarizer.summarize(transcription, recording.title);
+
+      // Save notes
+      const notePath = this.noteWriter.saveNote(
+        summary,
+        transcription,
+        recording.title
+      );
+
+      // Update recording with successful results
+      this.recordingHistory.updateRecording(recordingId, {
+        status: 'completed',
+        notePath: notePath,
+        error: null
+      });
+
+      console.log('\n✅ Retry completed successfully!\n');
+
+      return {
+        success: true,
+        transcription,
+        summary,
+        notePath
+      };
+    } catch (error) {
+      console.error('\n❌ Failed to retry transcription:', error.message);
+      
+      // Update recording status to failed
+      this.recordingHistory.updateRecording(recordingId, {
+        status: 'failed',
+        error: error.message
+      });
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Get all recordings
+   */
+  getAllRecordings() {
+    return this.recordingHistory.getAllRecordings();
+  }
+
+  /**
+   * Get a specific recording
+   */
+  getRecording(recordingId) {
+    return this.recordingHistory.getRecording(recordingId);
+  }
+
+  /**
+   * Delete a recording
+   */
+  deleteRecording(recordingId) {
+    return this.recordingHistory.deleteRecording(recordingId);
+  }
+
+  /**
+   * Update a recording's path or other properties
+   */
+  updateRecordingPath(recordingId, updates) {
+    return this.recordingHistory.updateRecording(recordingId, updates);
   }
 
   /**
@@ -146,15 +286,18 @@ class MeetingNoteTaker {
    */
   cleanupTempFiles() {
     try {
+      // Keep audio files in temp folder for history
       if (this.currentAudioPath && fs.existsSync(this.currentAudioPath)) {
-        fs.unlinkSync(this.currentAudioPath);
-        console.log('🧹 Cleaned up temporary audio file');
+        console.log('📦 Keeping audio file for history:', this.currentAudioPath);
       }
 
-      // Also clean up the .txt file created by whisper
-      const txtPath = this.currentAudioPath.replace(/\.[^/.]+$/, '.txt');
-      if (fs.existsSync(txtPath)) {
-        fs.unlinkSync(txtPath);
+      // Clean up the .txt file created by whisper
+      if (this.currentAudioPath) {
+        const txtPath = this.currentAudioPath.replace(/\.[^/.]+$/, '.txt');
+        if (fs.existsSync(txtPath)) {
+          fs.unlinkSync(txtPath);
+          console.log('🧹 Cleaned up temporary transcript file');
+        }
       }
     } catch (error) {
       console.warn('⚠️  Failed to cleanup temp files:', error.message);
@@ -170,4 +313,3 @@ class MeetingNoteTaker {
 }
 
 module.exports = { MeetingNoteTaker };
-
