@@ -4,96 +4,53 @@ const { exec } = require('child_process');
 const Config = require('./config');
 const DependencyChecker = require('./dependencyChecker');
 const analytics = require('./analytics');
+const { createWindow: createMainWindow, createSetupWindow: createSetupWindowUtil } = require('../utils/main/window');
+const { updateTrayIcon, updateTrayMenu, setupTrayClickHandlers } = require('../utils/main/tray');
+const { loadBaseTrayIcon } = require('../utils/main/trayIcon');
 
 let mainWindow;
 let setupWindow;
 let tray;
+let isRecording = false;
+let baseTrayIcon = null;
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 900,
-    height: 900,
-    titleBarStyle: 'hiddenInset',
-    backgroundColor: '#F5F1E8',
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true
-    },
-    icon: path.join(__dirname, '../assets/icon.icns')
-  });
-
-  mainWindow.loadFile(path.join(__dirname, '../ui/index.html'));
-
-  // Open DevTools in development mode
-  if (process.argv.includes('--dev')) {
-    mainWindow.webContents.openDevTools();
-  }
-
+  mainWindow = createMainWindow(app);
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+}
 
-  // Minimize to tray instead of closing
-  mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
-      event.preventDefault();
-      mainWindow.hide();
-    }
-  });
+function updateTrayIconLocal(recording) {
+  isRecording = recording;
+  if (tray) {
+    baseTrayIcon = updateTrayIcon(tray, recording, baseTrayIcon);
+  }
+}
+
+function updateTrayMenuLocal() {
+  if (tray) {
+    updateTrayMenu(tray, isRecording, mainWindow, app, shell);
+  }
 }
 
 function createTray() {
-  // Create a simple tray icon (you can replace with a proper icon)
-  const trayIcon = nativeImage.createFromPath(
-    path.join(__dirname, '../assets/icon.icns')
-  ).resize({ width: 16, height: 16 });
+  // Load base icon
+  baseTrayIcon = loadBaseTrayIcon();
   
-  tray = new Tray(trayIcon);
+  tray = new Tray(baseTrayIcon);
   
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Show App',
-      click: () => {
-        mainWindow.show();
-      }
-    },
-    {
-      label: 'Quit',
-      click: () => {
-        app.isQuitting = true;
-        app.quit();
-      }
-    }
-  ]);
-
+  // Set initial menu
+  updateTrayMenuLocal();
+  
   tray.setToolTip('Aura - Meeting Recorder');
-  tray.setContextMenu(contextMenu);
   
-  tray.on('click', () => {
-    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
-  });
+  // Setup click handlers
+  setupTrayClickHandlers(tray, () => isRecording, mainWindow, updateTrayMenuLocal);
 }
 
 function createSetupWindow() {
-  setupWindow = new BrowserWindow({
-    width: 700,
-    height: 800,
-    titleBarStyle: 'hiddenInset',
-    backgroundColor: '#1e1e1e',
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    },
-    icon: path.join(__dirname, '../assets/icon.icns')
-  });
-
-  setupWindow.loadFile(path.join(__dirname, '../ui/setup.html'));
-
-  if (process.argv.includes('--dev')) {
-    setupWindow.webContents.openDevTools();
-  }
-
+  setupWindow = createSetupWindowUtil();
   setupWindow.on('closed', () => {
     setupWindow = null;
   });
@@ -150,6 +107,17 @@ ipcMain.on('minimize-to-tray', () => {
   if (mainWindow) {
     mainWindow.hide();
   }
+});
+
+// Recording state change handlers
+ipcMain.on('recording-started', () => {
+  updateTrayIconLocal(true);
+  updateTrayMenuLocal();
+});
+
+ipcMain.on('recording-stopped', () => {
+  updateTrayIconLocal(false);
+  updateTrayMenuLocal();
 });
 
 // Setup wizard handlers

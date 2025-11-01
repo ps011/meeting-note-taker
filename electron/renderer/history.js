@@ -1,4 +1,6 @@
 const { ipcRenderer } = require('electron');
+const historyThemeUtils = require('../utils/renderer/theme');
+const { openMainPage } = require('../utils/renderer/navigation');
 
 // State
 let recordings = [];
@@ -9,20 +11,13 @@ const emptyState = document.getElementById('emptyState');
 const recordingsList = document.getElementById('recordingsList');
 const startRecordingButton = document.getElementById('startRecordingButton');
 
-function loadTheme() {
-  if (window.Layout?.loadTheme) {
-    window.Layout.loadTheme();
-  } else {
-    const theme = localStorage.getItem('theme') || 'light';
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }
-}
+// Use utility function - it already checks for window.Layout
 
 function setupButtonListeners() {
   const backButton = document.getElementById('backButton');
   if (backButton) {
     backButton.addEventListener('click', () => {
-      window.location.href = 'index.html';
+      openMainPage();
     });
   }
   
@@ -35,13 +30,18 @@ function setupButtonListeners() {
   
   if (startRecordingButton) {
     startRecordingButton.addEventListener('click', () => {
-      window.location.href = 'index.html';
+      openMainPage();
     });
   }
 }
 
 async function init() {
-  loadTheme();
+  // Use window.Layout.loadTheme if available, otherwise use utility
+  if (window.Layout?.loadTheme) {
+    window.Layout.loadTheme();
+  } else {
+    historyThemeUtils.loadTheme();
+  }
   window.addEventListener('layoutLoaded', setupButtonListeners);
   
   if (document.readyState !== 'loading') {

@@ -60,14 +60,12 @@ const headerConfigs = {
   },
   'setup.html': {
     left: `
-      <svg width="175" height="40" viewBox="0 0 370 100" xmlns="http://www.w3.org/2000/svg" class="w-54 h-10">
-        <g fill="currentColor">
-          <path d="M25.04899,10.19723h-4.52647l-37.31581,73.3068v4.08487h76.50846v-4.08487zM6.28068,72.13265l16.11866,-31.57492l14.79384,31.57492z"/>
-          <path d="M165.31449,58.99483v-48.7976h-15.45625v48.908h0.1104c-0.1104,3.86406 -1.54563,7.39692 -4.30567,10.15697c-2.76005,2.76005 -6.2929,4.19527 -10.15697,4.19527c-3.86406,0 -7.50732,-1.43522 -10.26737,-4.19527c-2.76005,-2.76005 -4.30567,-6.40331 -4.30567,-10.26737v-48.7976h-15.45625v48.908c0.1104,16.44987 13.46902,29.80849 30.02929,29.80849c16.44987,0 29.91889,-13.35862 29.91889,-29.91889z"/>
-          <path d="M211.51765,10.08683v77.39167h15.45625v-47.69358l7.72813,16.67067v0.1104l14.46264,31.02291h16.44987l-16.11866,-33.12054c9.60496,-1.65603 15.67706,-11.70259 15.67706,-21.08675c0,-12.80661 -10.37777,-23.29478 -23.18438,-23.29478zM235.36444,25.54308h6.62411c4.30567,0 7.72813,3.53286 7.72813,7.83853c0,3.97447 -2.98085,7.17612 -6.73451,7.61772z"/>
-          <path d="M350.12713,10.19723h-4.52647l-37.31581,73.3068v4.08487h76.50846v-4.08487zM331.35882,72.13265l16.11866,-31.57492l14.79384,31.57492z"/>
-        </g>
-      </svg>
+      <button id="backButton" class="p-2 rounded-xl bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 transition-all duration-300 no-drag">
+        <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </button>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Settings</h1>
     `,
     right: `
       <button id="themeToggle" class="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 transition" title="Toggle theme">
@@ -124,36 +122,19 @@ function loadLayout() {
   setupThemeToggle();
 }
 
+// Import theme utilities - use unique name to avoid global scope conflicts
+const layoutThemeUtils = require('../utils/renderer/theme');
+
 function setupThemeToggle() {
   const themeToggle = document.getElementById('themeToggle');
   if (!themeToggle) return;
 
   // Load saved theme
-  loadTheme();
+  layoutThemeUtils.loadTheme();
 
   themeToggle.addEventListener('click', () => {
-    toggleTheme();
+    layoutThemeUtils.toggleTheme();
   });
-}
-
-function loadTheme() {
-  const theme = localStorage.getItem('theme') || 'light';
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}
-
-function toggleTheme() {
-  const isDark = document.documentElement.classList.contains('dark');
-  if (isDark) {
-    document.documentElement.classList.remove('dark');
-    localStorage.setItem('theme', 'light');
-  } else {
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
-  }
 }
 
 if (document.readyState === 'loading') {
@@ -168,7 +149,7 @@ if (document.readyState === 'loading') {
 
 window.Layout = {
   loadLayout,
-  loadTheme,
-  toggleTheme
+  loadTheme: layoutThemeUtils.loadTheme,
+  toggleTheme: layoutThemeUtils.toggleTheme
 };
 

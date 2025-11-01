@@ -4,24 +4,11 @@ const fs = require('fs');
 const os = require('os');
 
 const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
-
-function trackEvent(eventName, parameters = {}) {
-  if (typeof gtag !== 'undefined') {
-    gtag('event', eventName, parameters);
-  }
-  ipcRenderer.send('analytics-track-event', eventName, parameters);
-}
-
-function trackPageView(pageName, pageTitle) {
-  if (typeof gtag !== 'undefined') {
-    gtag('event', 'page_view', {
-      page_title: pageTitle,
-      page_location: `app://${pageName}`,
-      page_path: `/${pageName}`
-    });
-  }
-  ipcRenderer.send('analytics-track-page-view', pageName, pageTitle);
-}
+const { trackEvent, trackPageView } = require('../utils/renderer/analytics');
+// Use unique names to avoid conflicts with other renderer scripts
+const rendererThemeUtils = require('../utils/renderer/theme');
+const { showNotification } = require('../utils/renderer/notifications');
+const { openNotesFolder, openRecordingsPage, openSettingsPage, openMainPage } = require('../utils/renderer/navigation');
 
 let noteTaker = null;
 let config = null;
@@ -36,28 +23,41 @@ let mergedStream = null;
 let analyser = null;
 let animationFrameId = null;
 let participants = [];
-const recordButton = document.getElementById('recordButton');
-const stopButton = document.getElementById('stopButton');
-const stopButtonContent = document.getElementById('stopButtonContent');
-const meetingTitleInput = document.getElementById('meetingTitle');
-const statusDot = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
-const timer = document.getElementById('timer');
-const timerDisplay = document.getElementById('timerDisplay');
-const statusMessage = document.getElementById('statusMessage');
-const recordingVisual = document.getElementById('recordingVisual');
-const vaultPath = document.getElementById('vaultPath');
-const modelName = document.getElementById('modelName');
-const openSettingsButton = document.getElementById('openSettings');
-const actionLabel = document.getElementById('actionLabel');
-const permissionBanner = document.getElementById('permissionBanner');
-const openPermissionsButton = document.getElementById('openPermissionsButton');
-const checkPermissionButton = document.getElementById('checkPermissionButton');
 
-const participantInput = document.getElementById('participantInput');
-const participantTags = document.getElementById('participantTags');
-const themeToggle = document.getElementById('themeToggle');
-const stopButtonInner = document.getElementById('stopButtonInner');
+// Helper function to get DOM elements safely
+function getElement(id) {
+  return document.getElementById(id);
+}
+
+// Store references to elements (will be updated when DOM is ready)
+let recordButton, stopButton, stopButtonContent, meetingTitleInput, statusDot, statusText;
+let timer, timerDisplay, statusMessage, recordingVisual, vaultPath, modelName;
+let actionLabel, permissionBanner, openPermissionsButton, checkPermissionButton;
+let participantInput, participantTags, themeToggle, stopButtonInner;
+
+// Function to refresh DOM element references
+function refreshDOMElements() {
+  recordButton = getElement('recordButton');
+  stopButton = getElement('stopButton');
+  stopButtonContent = getElement('stopButtonContent');
+  meetingTitleInput = getElement('meetingTitle');
+  statusDot = getElement('statusDot');
+  statusText = getElement('statusText');
+  timer = getElement('timer');
+  timerDisplay = getElement('timerDisplay');
+  statusMessage = getElement('statusMessage');
+  recordingVisual = getElement('recordingVisual');
+  vaultPath = getElement('vaultPath');
+  modelName = getElement('modelName');
+  actionLabel = getElement('actionLabel');
+  permissionBanner = getElement('permissionBanner');
+  openPermissionsButton = getElement('openPermissionsButton');
+  checkPermissionButton = getElement('checkPermissionButton');
+  participantInput = getElement('participantInput');
+  participantTags = getElement('participantTags');
+  themeToggle = getElement('themeToggle');
+  stopButtonInner = getElement('stopButtonInner');
+}
 
 async function checkPermissions() {
   try {
@@ -95,32 +95,24 @@ async function openSystemPreferences() {
   }
 }
 
-function loadTheme() {
-  if (window.Layout?.loadTheme) {
-    window.Layout.loadTheme();
-  } else {
-    const theme = localStorage.getItem('theme') || 'light';
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }
-}
-
-function toggleTheme() {
-  if (window.Layout?.toggleTheme) {
-    window.Layout.toggleTheme();
-  } else {
-    const isDark = document.documentElement.classList.contains('dark');
-    document.documentElement.classList.toggle('dark', !isDark);
-    localStorage.setItem('theme', !isDark ? 'dark' : 'light');
-  }
-}
+// Theme functions are now imported from utils/renderer/theme.js
 
 async function init() {
+  // Refresh DOM elements before using them
+  refreshDOMElements();
+  
   trackPageView('main', 'Main App Window');
-  loadTheme();
+  // Use window.Layout.loadTheme if available (from layout.js), otherwise use utility directly
+  if (window.Layout?.loadTheme) {
+    window.Layout.loadTheme();
+  } else if (rendererThemeUtils.loadTheme) {
+    rendererThemeUtils.loadTheme();
+  }
   ipcRenderer.send('get-config');
   
   ipcRenderer.on('config-data', (event, data) => {
     config = data;
+    refreshDOMElements(); // Refresh in case elements weren't ready before
     if (vaultPath) vaultPath.textContent = config.notesPath || 'Not configured';
     if (modelName) modelName.textContent = config.llamaModel || 'Not configured';
     
@@ -129,6 +121,51 @@ async function init() {
       setStatus('ready', 'Ready');
     } else {
       setStatus('warning', 'Not configured');
+    }
+  });
+  
+  // Listen for tray start recording command
+  ipcRenderer.on('tray-start-recording', () => {
+    if (!isRecording && noteTaker) {
+      startRecording();
+    } else if (!noteTaker) {
+      // Show notification instead of alert (won't open window)
+      if (Notification.permission === 'granted') {
+        new Notification('Aura - Meeting Recorder', {
+          body: 'Please configure notes folder in Settings first. Open the app to configure.',
+          silent: false
+        });
+      } else {
+        console.warn('Please configure notes folder in Settings first');
+      }
+    } else if (isRecording) {
+      // Already recording
+      if (Notification.permission === 'granted') {
+        new Notification('Aura - Meeting Recorder', {
+          body: 'Recording is already in progress',
+          silent: true
+        });
+      }
+      console.log('Recording already in progress');
+    }
+  });
+  
+  // Listen for tray stop recording command
+  ipcRenderer.on('tray-stop-recording', () => {
+    if (isRecording) {
+      stopRecording();
+    }
+  });
+  
+  // Listen for show notes not configured message
+  ipcRenderer.on('show-notes-not-configured', () => {
+    if (Notification.permission === 'granted') {
+      new Notification('Aura - Notes Folder Not Configured', {
+        body: 'Please configure your notes folder in Settings first.',
+        silent: false
+      });
+    } else {
+      console.warn('Please configure your notes folder in Settings first');
     }
   });
   
@@ -230,56 +267,98 @@ function stopAudioVisualization() {
 function openHistory() {
   if (!config?.notesPath) {
     alert('Please configure your notes folder in settings first.');
-    window.location.href = 'setup.html';
+    openSettingsPage();
     return;
   }
-  shell.openPath(config.notesPath);
+  openNotesFolder(config.notesPath).catch(err => {
+    console.error('Error opening notes folder:', err);
+    alert('Failed to open notes folder');
+  });
 }
 
 function openRecordings() {
   if (!config?.notesPath) {
     alert('Please configure your notes folder in settings first.');
-    window.location.href = 'setup.html';
+    openSettingsPage();
     return;
   }
-  window.location.href = 'history.html';
+  openRecordingsPage();
 }
 
-recordButton.addEventListener('click', startRecording);
-if (stopButtonInner) stopButtonInner.addEventListener('click', stopRecording);
-if (checkPermissionButton) checkPermissionButton.addEventListener('click', checkPermissions);
-if (openPermissionsButton) openPermissionsButton.addEventListener('click', openSystemPreferences);
+let mainButtonsSetup = false;
 
-function setupLayoutButtonListeners() {
+// Setup layout buttons (header buttons created by layout.js)
+function setupLayoutButtons() {
   const openSettingsButton = document.getElementById('openSettings');
-  if (openSettingsButton) {
+  if (openSettingsButton && !openSettingsButton.dataset.listenerAttached) {
     openSettingsButton.addEventListener('click', () => {
-      window.location.href = 'setup.html';
+      openSettingsPage();
     });
+    openSettingsButton.dataset.listenerAttached = 'true';
   }
   
   const recordingsButton = document.getElementById('recordingsButton');
-  if (recordingsButton) {
+  if (recordingsButton && !recordingsButton.dataset.listenerAttached) {
     recordingsButton.addEventListener('click', openRecordings);
+    recordingsButton.dataset.listenerAttached = 'true';
   }
   
   const historyButton = document.getElementById('historyButton');
-  if (historyButton) {
+  if (historyButton && !historyButton.dataset.listenerAttached) {
     historyButton.addEventListener('click', openHistory);
+    historyButton.dataset.listenerAttached = 'true';
   }
 }
 
-window.addEventListener('layoutLoaded', setupLayoutButtonListeners);
-if (document.readyState !== 'loading') {
-  setTimeout(setupLayoutButtonListeners, 100);
+function setupButtonListeners() {
+  // Refresh DOM element references
+  refreshDOMElements();
+  
+  // Main recording buttons - only set up once
+  if (!mainButtonsSetup) {
+    mainButtonsSetup = true;
+    
+    if (recordButton) {
+      recordButton.addEventListener('click', startRecording);
+    }
+    if (stopButtonInner) {
+      stopButtonInner.addEventListener('click', stopRecording);
+    }
+    
+    // Permission buttons
+    if (checkPermissionButton) {
+      checkPermissionButton.addEventListener('click', checkPermissions);
+    }
+    if (openPermissionsButton) {
+      openPermissionsButton.addEventListener('click', openSystemPreferences);
+    }
+    
+    // Participant input
+    if (participantInput) {
+      participantInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addParticipant(participantInput.value.trim());
+        }
+      });
+    }
+  }
+  
+  // Layout buttons can be set up multiple times (when layout reloads)
+  setupLayoutButtons();
 }
 
-if (participantInput) {
-  participantInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addParticipant(participantInput.value.trim());
-    }
+// Setup buttons when layout is loaded
+window.addEventListener('layoutLoaded', () => {
+  setupButtonListeners();
+});
+
+// Also try to set up immediately with a delay
+if (document.readyState !== 'loading') {
+  setTimeout(setupButtonListeners, 150);
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(setupButtonListeners, 150);
   });
 }
 
@@ -305,6 +384,17 @@ async function startRecording() {
     isRecording = true;
     startTime = Date.now();
     startTimer();
+    
+    // Notify main process that recording started
+    ipcRenderer.send('recording-started');
+    
+    // Show notification that recording has started
+    if (Notification.permission === 'granted') {
+      new Notification('Aura - Recording Started', {
+        body: `Recording "${title}" has started`,
+        silent: false
+      });
+    }
   } catch (error) {
     console.error('Recording error:', error);
     stopAudioVisualization();
@@ -321,9 +411,27 @@ async function startRecording() {
       errorMessage += error.message;
     }
     
-    alert(errorMessage);
+    // Show notification instead of alert when triggered from tray
+    if (Notification.permission === 'granted') {
+      new Notification('Aura - Recording Failed', {
+        body: errorMessage.split('\n')[0], // First line of error
+        silent: false
+      });
+    } else {
+      console.error('Recording error:', errorMessage);
+    }
+    
     setStatus('ready', 'Ready');
-    resetUI();
+    // Don't send recording-stopped since recording never started
+    isRecording = false;
+    stopAudioVisualization();
+    recordButton.classList.remove('hidden');
+    stopButton.classList.add('hidden');
+    stopButton.classList.remove('flex');
+    meetingTitleInput.disabled = false;
+    if (stopButtonInner) {
+      stopButtonInner.disabled = false;
+    }
   }
 }
 
@@ -471,6 +579,14 @@ async function stopRecording() {
   try {
     if (!isRecording) return;
     
+    // Show notification that recording is stopping
+    if (Notification.permission === 'granted') {
+      new Notification('Aura - Stopping Recording', {
+        body: 'Processing and saving your meeting...',
+        silent: true
+      });
+    }
+    
     setStatus('processing', 'Processing');
     stopAudioVisualization();
     stopTimer();
@@ -526,8 +642,9 @@ async function stopRecording() {
       }
     }
     
+    // Show notification that recording stopped and notes were saved
     setTimeout(() => {
-      const notification = new Notification('Aura - Meeting Recorder', {
+      const notification = new Notification('Aura - Recording Stopped', {
         body: 'Meeting notes have been saved successfully!',
         silent: false
       });
@@ -553,7 +670,16 @@ async function stopRecording() {
       updateProgress(0, 'error', errorMsg.substring(0, 50));
     }
     
+    // Show notification that recording stopped with error
+    if (Notification.permission === 'granted') {
+      new Notification('Aura - Recording Stopped', {
+        body: `Recording stopped. ${errorMsg.split('\n')[0]}`,
+        silent: false
+      });
+    }
+    
     setStatus('ready', 'Ready');
+    // resetUI will be called which sends recording-stopped, but ensure state is reset
     setTimeout(resetUI, 5000);
   }
 }
@@ -703,7 +829,13 @@ function updateProgress(step, state, message) {
 }
 
 function resetUI() {
+  const wasRecording = isRecording;
   isRecording = false;
+  
+  // Notify main process that recording stopped
+  if (wasRecording) {
+    ipcRenderer.send('recording-stopped');
+  }
   stopAudioVisualization();
   recordButton.classList.remove('hidden');
   stopButton.classList.add('hidden');

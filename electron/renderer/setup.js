@@ -2,6 +2,7 @@ const { ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { openMainPage } = require('../utils/renderer/navigation');
 
 // DOM Elements
 const vaultPathInput = document.getElementById('vaultPath');
@@ -32,17 +33,15 @@ const llamaApiUrlInput = document.getElementById('llamaApiUrl');
 let selectedPath = '';
 let dependenciesChecked = false;
 let allDependenciesInstalled = false;
+const setupThemeUtils = require('../utils/renderer/theme');
+
 let missingDependencies = [];
 
-loadTheme();
-
-function loadTheme() {
-  if (window.Layout?.loadTheme) {
-    window.Layout.loadTheme();
-  } else {
-    const theme = localStorage.getItem('theme') || 'light';
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }
+// Use window.Layout.loadTheme if available, otherwise use utility
+if (window.Layout?.loadTheme) {
+  window.Layout.loadTheme();
+} else {
+  setupThemeUtils.loadTheme();
 }
 
 initializeDependencyChecker();
@@ -270,6 +269,26 @@ ipcRenderer.on('dependency-progress', (event, progress) => {
 checkDepsButton.addEventListener('click', checkDependencies);
 installDepsButton.addEventListener('click', installDependencies);
 
+// Setup back button listener (created by layout.js)
+function setupBackButton() {
+  const backButton = document.getElementById('backButton');
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      openMainPage();
+    });
+  }
+}
+
+// Setup back button when layout is loaded or immediately if already loaded
+window.addEventListener('layoutLoaded', setupBackButton);
+if (document.readyState !== 'loading') {
+  setTimeout(setupBackButton, 100);
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(setupBackButton, 100);
+  });
+}
+
 function toggleTheme() {
   if (window.Layout?.toggleTheme) {
     window.Layout.toggleTheme();
@@ -397,7 +416,7 @@ skipButton.addEventListener('click', () => {
   ipcRenderer.invoke('get-config').then((currentConfig) => {
     if (currentConfig.setupCompleted) {
       // Already set up, just go back
-      window.location.href = 'index.html';
+      openMainPage();
     } else {
       // First time setup, skip it
       ipcRenderer.send('setup-skip');
@@ -423,7 +442,7 @@ completeButton.addEventListener('click', () => {
     if (currentConfig.setupCompleted) {
       // Already set up, just save and go back
       ipcRenderer.send('save-config', config);
-      window.location.href = 'index.html';
+      openMainPage();
     } else {
       // First time setup
       ipcRenderer.send('setup-complete', config);
