@@ -8,7 +8,12 @@ const { trackEvent, trackPageView } = require('../utils/renderer/analytics');
 // Use unique names to avoid conflicts with other renderer scripts
 const rendererThemeUtils = require('../utils/renderer/theme');
 const { showNotification } = require('../utils/renderer/notifications');
-const { openNotesFolder, openRecordingsPage, openSettingsPage, openMainPage } = require('../utils/renderer/navigation');
+const {
+  openNotesFolder,
+  openRecordingsPage,
+  openSettingsPage,
+  openMainPage,
+} = require('../utils/renderer/navigation');
 
 let noteTaker = null;
 let config = null;
@@ -30,7 +35,13 @@ function getElement(id) {
 }
 
 // Store references to elements (will be updated when DOM is ready)
-let recordButton, stopButton, stopButtonContent, meetingTitleInput, meetingTemplateSelect, statusDot, statusText;
+let recordButton,
+  stopButton,
+  stopButtonContent,
+  meetingTitleInput,
+  meetingTemplateSelect,
+  statusDot,
+  statusText;
 let timer, timerDisplay, statusMessage, recordingVisual, vaultPath, modelName;
 let actionLabel, permissionBanner, openPermissionsButton, checkPermissionButton;
 let participantInput, participantTags, themeToggle, stopButtonInner;
@@ -62,25 +73,28 @@ function refreshDOMElements() {
 
 async function checkPermissions() {
   try {
-    const result = await ipcRenderer.invoke('check-screen-recording-permission');
-    
+    const result = await ipcRenderer.invoke(
+      'check-screen-recording-permission'
+    );
+
     if (result.granted) {
       permissionBanner.classList.add('hidden');
     } else {
       permissionBanner.classList.remove('hidden');
       const isDev = process.env.NODE_ENV !== 'production';
       let message = 'Screen Recording Permission Required\n\n';
-      
+
       if (isDev) {
-        message += 'Grant permission to Terminal/Electron, then fully quit and relaunch.';
+        message +=
+          'Grant permission to Terminal/Electron, then fully quit and relaunch.';
       } else {
-        message += 'Grant permission to Meeting Note Taker in System Settings, then quit and relaunch the app.';
+        message +=
+          'Grant permission to Meeting Note Taker in System Settings, then quit and relaunch the app.';
       }
-      
+
       alert(message);
     }
   } catch (error) {
-    console.error('Error checking permissions:', error);
     alert('Error checking permissions: ' + error.message);
   }
 }
@@ -89,11 +103,11 @@ async function openSystemPreferences() {
   try {
     await ipcRenderer.invoke('open-system-preferences');
     setTimeout(() => {
-      alert('System Settings Opening...\n\nGo to Privacy & Security → Screen Recording, enable the app, then fully quit and restart.');
+      alert(
+        'System Settings Opening...\n\nGo to Privacy & Security → Screen Recording, enable the app, then fully quit and restart.'
+      );
     }, 500);
-  } catch (error) {
-    console.error('Error opening System Settings:', error);
-  }
+  } catch (error) {}
 }
 
 // Theme functions are now imported from utils/renderer/theme.js
@@ -101,7 +115,7 @@ async function openSystemPreferences() {
 async function init() {
   // Refresh DOM elements before using them
   refreshDOMElements();
-  
+
   trackPageView('main', 'Main App Window');
   // Use window.Layout.loadTheme if available (from layout.js), otherwise use utility directly
   if (window.Layout?.loadTheme) {
@@ -110,13 +124,14 @@ async function init() {
     rendererThemeUtils.loadTheme();
   }
   ipcRenderer.send('get-config');
-  
+
   ipcRenderer.on('config-data', (event, data) => {
     config = data;
     refreshDOMElements(); // Refresh in case elements weren't ready before
     if (vaultPath) vaultPath.textContent = config.notesPath || 'Not configured';
-    if (modelName) modelName.textContent = config.llamaModel || 'Not configured';
-    
+    if (modelName)
+      modelName.textContent = config.llamaModel || 'Not configured';
+
     if (config.notesPath) {
       noteTaker = new MeetingNoteTaker(config);
       setStatus('ready', 'Ready');
@@ -124,7 +139,7 @@ async function init() {
       setStatus('warning', 'Not configured');
     }
   });
-  
+
   // Listen for tray start recording command
   ipcRenderer.on('tray-start-recording', () => {
     if (!isRecording && noteTaker) {
@@ -134,54 +149,51 @@ async function init() {
       if (Notification.permission === 'granted') {
         new Notification('Aura - Meeting Recorder', {
           body: 'Please configure notes folder in Settings first. Open the app to configure.',
-          silent: false
+          silent: false,
         });
       } else {
-        console.warn('Please configure notes folder in Settings first');
       }
     } else if (isRecording) {
       // Already recording
       if (Notification.permission === 'granted') {
         new Notification('Aura - Meeting Recorder', {
           body: 'Recording is already in progress',
-          silent: true
+          silent: true,
         });
       }
-      console.log('Recording already in progress');
     }
   });
-  
+
   // Listen for tray stop recording command
   ipcRenderer.on('tray-stop-recording', () => {
     if (isRecording) {
       stopRecording();
     }
   });
-  
+
   // Listen for show notes not configured message
   ipcRenderer.on('show-notes-not-configured', () => {
     if (Notification.permission === 'granted') {
       new Notification('Aura - Notes Folder Not Configured', {
         body: 'Please configure your notes folder in Settings first.',
-        silent: false
+        silent: false,
       });
     } else {
-      console.warn('Please configure your notes folder in Settings first');
     }
   });
-  
+
   setTimeout(checkPermissionsOnLoad, 1000);
 }
 
 async function checkPermissionsOnLoad() {
   try {
-    const result = await ipcRenderer.invoke('check-screen-recording-permission');
+    const result = await ipcRenderer.invoke(
+      'check-screen-recording-permission'
+    );
     if (!result.granted) {
       permissionBanner.classList.remove('hidden');
     }
-  } catch (error) {
-    console.error('Error checking permissions:', error);
-  }
+  } catch (error) {}
 }
 
 function addParticipant(name) {
@@ -189,15 +201,25 @@ function addParticipant(name) {
   participants.push(name);
   renderParticipants();
   participantInput.value = '';
+  // Update participants in noteTaker if recording
+  if (isRecording && noteTaker) {
+    noteTaker.updateMeetingParticipants(participants);
+  }
 }
 
 function removeParticipant(name) {
-  participants = participants.filter(p => p !== name);
+  participants = participants.filter((p) => p !== name);
   renderParticipants();
+  // Update participants in noteTaker if recording
+  if (isRecording && noteTaker) {
+    noteTaker.updateMeetingParticipants(participants);
+  }
 }
 
 function renderParticipants() {
-  participantTags.innerHTML = participants.map(name => `
+  participantTags.innerHTML = participants
+    .map(
+      (name) => `
     <div class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-200/60 dark:bg-gray-600/60 rounded-lg text-sm text-gray-700 dark:text-gray-200">
       <span>${name}</span>
       <button onclick="window.removeParticipant('${name}')" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
@@ -206,54 +228,60 @@ function renderParticipants() {
         </svg>
       </button>
     </div>
-  `).join('');
+  `
+    )
+    .join('');
 }
 
 window.removeParticipant = removeParticipant;
 
 function updateAudioBars() {
-  if (!analyser || !recordingVisual || recordingVisual.classList.contains('hidden')) {
+  if (
+    !analyser ||
+    !recordingVisual ||
+    recordingVisual.classList.contains('hidden')
+  ) {
     return;
   }
-  
+
   const bufferLength = analyser.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
   analyser.getByteFrequencyData(dataArray);
-  
+
   // Get the bars
   const bars = recordingVisual.querySelectorAll('.bar');
-  
+
   if (bars.length === 0) {
     animationFrameId = requestAnimationFrame(updateAudioBars);
     return;
   }
-  
+
   // Calculate average volume across different frequency ranges
   const barCount = bars.length;
   const samplesPerBar = Math.floor(bufferLength / barCount);
-  
+
   bars.forEach((bar, index) => {
     // Get average amplitude for this bar's frequency range
     let sum = 0;
     const startIndex = index * samplesPerBar;
     const endIndex = startIndex + samplesPerBar;
-    
+
     for (let i = startIndex; i < endIndex && i < bufferLength; i++) {
       sum += dataArray[i];
     }
-    
+
     const average = sum / samplesPerBar;
-    
+
     // Scale the height between 12px and 40px based on amplitude
     const minHeight = 12;
     const maxHeight = 40;
     const normalizedValue = average / 255; // Normalize to 0-1
-    const height = minHeight + (normalizedValue * (maxHeight - minHeight));
-    
+    const height = minHeight + normalizedValue * (maxHeight - minHeight);
+
     // Apply the height with a smooth transition
     bar.style.height = `${height}px`;
   });
-  
+
   // Continue the animation loop
   animationFrameId = requestAnimationFrame(updateAudioBars);
 }
@@ -271,8 +299,7 @@ function openHistory() {
     openSettingsPage();
     return;
   }
-  openNotesFolder(config.notesPath).catch(err => {
-    console.error('Error opening notes folder:', err);
+  openNotesFolder(config.notesPath).catch((err) => {
     alert('Failed to open notes folder');
   });
 }
@@ -297,13 +324,13 @@ function setupLayoutButtons() {
     });
     openSettingsButton.dataset.listenerAttached = 'true';
   }
-  
+
   const recordingsButton = document.getElementById('recordingsButton');
   if (recordingsButton && !recordingsButton.dataset.listenerAttached) {
     recordingsButton.addEventListener('click', openRecordings);
     recordingsButton.dataset.listenerAttached = 'true';
   }
-  
+
   const historyButton = document.getElementById('historyButton');
   if (historyButton && !historyButton.dataset.listenerAttached) {
     historyButton.addEventListener('click', openHistory);
@@ -314,18 +341,18 @@ function setupLayoutButtons() {
 function setupButtonListeners() {
   // Refresh DOM element references
   refreshDOMElements();
-  
+
   // Main recording buttons - only set up once
   if (!mainButtonsSetup) {
     mainButtonsSetup = true;
-    
+
     if (recordButton) {
       recordButton.addEventListener('click', startRecording);
     }
     if (stopButtonInner) {
       stopButtonInner.addEventListener('click', stopRecording);
     }
-    
+
     // Permission buttons
     if (checkPermissionButton) {
       checkPermissionButton.addEventListener('click', checkPermissions);
@@ -333,7 +360,7 @@ function setupButtonListeners() {
     if (openPermissionsButton) {
       openPermissionsButton.addEventListener('click', openSystemPreferences);
     }
-    
+
     // Participant input
     if (participantInput) {
       participantInput.addEventListener('keydown', (e) => {
@@ -343,8 +370,29 @@ function setupButtonListeners() {
         }
       });
     }
+
+    // Add event listeners for updating metadata during recording
+    if (meetingTitleInput && !meetingTitleInput.dataset.listenerAttached) {
+      meetingTitleInput.addEventListener('input', () => {
+        if (isRecording && noteTaker) {
+          const newTitle = meetingTitleInput.value.trim() || 'Meeting';
+          noteTaker.updateMeetingTitle(newTitle);
+        }
+      });
+      meetingTitleInput.dataset.listenerAttached = 'true';
+    }
+
+    if (meetingTemplateSelect && !meetingTemplateSelect.dataset.listenerAttached) {
+      meetingTemplateSelect.addEventListener('change', () => {
+        if (isRecording && noteTaker) {
+          const newTemplateId = meetingTemplateSelect.value || 'general';
+          noteTaker.updateMeetingTemplate(newTemplateId);
+        }
+      });
+      meetingTemplateSelect.dataset.listenerAttached = 'true';
+    }
   }
-  
+
   // Layout buttons can be set up multiple times (when layout reloads)
   setupLayoutButtons();
 }
@@ -369,61 +417,67 @@ async function startRecording() {
       alert('Please configure notes folder in Settings first');
       return;
     }
-    
+
     const title = meetingTitleInput.value.trim() || 'Meeting';
-    const templateId = meetingTemplateSelect ? meetingTemplateSelect.value : 'general';
-    
+    const templateId = meetingTemplateSelect
+      ? meetingTemplateSelect.value
+      : 'general';
+
     setStatus('recording', 'Recording');
     recordButton.classList.add('hidden');
     stopButton.classList.remove('hidden');
     stopButton.classList.add('flex');
-    meetingTitleInput.disabled = true;
-    if (meetingTemplateSelect) meetingTemplateSelect.disabled = true;
-    
+    // Keep fields enabled during recording so they can be edited
+    // meetingTitleInput.disabled = true;
+    // if (meetingTemplateSelect) meetingTemplateSelect.disabled = true;
+
     await startMicrophoneRecording();
     updateAudioBars();
-    await noteTaker.startMeeting(title, templateId);
-    
+    await noteTaker.startMeeting(title, templateId, participants);
+
     isRecording = true;
     startTime = Date.now();
     startTimer();
-    
+
     // Notify main process that recording started
     ipcRenderer.send('recording-started');
-    
+
     // Show notification that recording has started
     if (Notification.permission === 'granted') {
       new Notification('Aura - Recording Started', {
         body: `Recording "${title}" has started`,
-        silent: false
+        silent: false,
       });
     }
   } catch (error) {
-    console.error('Recording error:', error);
     stopAudioVisualization();
-    
+
     let errorMessage = 'Failed to start recording.\n\n';
-    
-    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+
+    if (
+      error.name === 'NotAllowedError' ||
+      error.name === 'PermissionDeniedError'
+    ) {
       errorMessage += 'Microphone Permission Required\n\n';
-      errorMessage += 'Go to System Settings → Privacy & Security → Microphone, enable this app, then restart.';
+      errorMessage +=
+        'Go to System Settings → Privacy & Security → Microphone, enable this app, then restart.';
     } else if (error.name === 'NotFoundError') {
       errorMessage += 'No microphone found\n\n';
-      errorMessage += 'Check that your microphone is connected and selected in System Settings → Sound → Input';
+      errorMessage +=
+        'Check that your microphone is connected and selected in System Settings → Sound → Input';
     } else {
       errorMessage += error.message;
     }
-    
+
     // Show notification instead of alert when triggered from tray
     if (Notification.permission === 'granted') {
       new Notification('Aura - Recording Failed', {
         body: errorMessage.split('\n')[0], // First line of error
-        silent: false
+        silent: false,
       });
     } else {
-      console.error('Recording error:', errorMessage);
     }
-    
+
     setStatus('ready', 'Ready');
     // Don't send recording-stopped since recording never started
     isRecording = false;
@@ -441,27 +495,41 @@ async function startRecording() {
 async function startMicrophoneRecording() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    const audioInputs = devices.filter(device => device.kind === 'audioinput');
-    
-    const virtualDevices = audioInputs.filter(device => {
+    const audioInputs = devices.filter(
+      (device) => device.kind === 'audioinput'
+    );
+
+    const virtualDevices = audioInputs.filter((device) => {
       const label = device.label.toLowerCase();
-      return label.includes('blackhole') || label.includes('soundflower') || 
-             label.includes('virtual') || label.includes('loopback') ||
-             label.includes('aggregate') || label.includes('multi-output');
+      return (
+        label.includes('blackhole') ||
+        label.includes('soundflower') ||
+        label.includes('virtual') ||
+        label.includes('loopback') ||
+        label.includes('aggregate') ||
+        label.includes('multi-output')
+      );
     });
-    
-    const headphoneDevices = audioInputs.filter(device => {
+
+    const headphoneDevices = audioInputs.filter((device) => {
       const label = device.label.toLowerCase();
-      return label.includes('headphone') || label.includes('airpods') ||
-             label.includes('bluetooth') || label.includes('usb audio') ||
-             label.includes('audio interface') || label.includes('focusrite') ||
-             label.includes('scarlett') || label.includes('apollo') ||
-             label.includes('rme') || label.includes('motu');
+      return (
+        label.includes('headphone') ||
+        label.includes('airpods') ||
+        label.includes('bluetooth') ||
+        label.includes('usb audio') ||
+        label.includes('audio interface') ||
+        label.includes('focusrite') ||
+        label.includes('scarlett') ||
+        label.includes('apollo') ||
+        label.includes('rme') ||
+        label.includes('motu')
+      );
     });
-    
+
     let systemAudioStream = null;
     let systemAudioSource = 'none';
-    
+
     for (const virtualDevice of virtualDevices) {
       try {
         systemAudioStream = await navigator.mediaDevices.getUserMedia({
@@ -469,9 +537,9 @@ async function startMicrophoneRecording() {
             deviceId: { exact: virtualDevice.deviceId },
             echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: false
+            autoGainControl: false,
           },
-          video: false
+          video: false,
         });
         systemAudioSource = virtualDevice.label;
         break;
@@ -479,7 +547,7 @@ async function startMicrophoneRecording() {
         continue;
       }
     }
-    
+
     if (!systemAudioStream && headphoneDevices.length > 0) {
       for (const headphoneDevice of headphoneDevices) {
         try {
@@ -488,9 +556,9 @@ async function startMicrophoneRecording() {
               deviceId: { exact: headphoneDevice.deviceId },
               echoCancellation: false,
               noiseSuppression: false,
-              autoGainControl: false
+              autoGainControl: false,
             },
-            video: false
+            video: false,
           });
           systemAudioSource = headphoneDevice.label;
           break;
@@ -499,81 +567,83 @@ async function startMicrophoneRecording() {
         }
       }
     }
-    
+
     if (!systemAudioStream) {
       try {
         systemAudioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: false
+            autoGainControl: false,
           },
-          video: false
+          video: false,
         });
         systemAudioSource = 'browser-selected';
       } catch (error) {
         // No system audio available, will record mic only
       }
     }
-    
+
     const micStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
-        autoGainControl: true
+        autoGainControl: true,
       },
-      video: false
+      video: false,
     });
-    
+
     if (systemAudioStream) {
       audioContext = new AudioContext();
-      const systemAudioSourceNode = audioContext.createMediaStreamSource(systemAudioStream);
+      const systemAudioSourceNode =
+        audioContext.createMediaStreamSource(systemAudioStream);
       const micSourceNode = audioContext.createMediaStreamSource(micStream);
       const destination = audioContext.createMediaStreamDestination();
-      
+
       systemAudioSourceNode.connect(destination);
       micSourceNode.connect(destination);
-      
+
       mergedStream = destination.stream;
       recordingStream = {
         systemAudioStream,
         micStream,
-        getTracks: () => [...systemAudioStream.getTracks(), ...micStream.getTracks()]
+        getTracks: () => [
+          ...systemAudioStream.getTracks(),
+          ...micStream.getTracks(),
+        ],
       };
     } else {
       audioContext = new AudioContext();
       mergedStream = micStream;
       recordingStream = {
         micStream,
-        getTracks: () => [...micStream.getTracks()]
+        getTracks: () => [...micStream.getTracks()],
       };
     }
-    
+
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.8;
-    
-    const visualizationSource = audioContext.createMediaStreamSource(mergedStream);
+
+    const visualizationSource =
+      audioContext.createMediaStreamSource(mergedStream);
     visualizationSource.connect(analyser);
-    
+
     audioChunks = [];
     mediaRecorder = new MediaRecorder(mergedStream, {
-      mimeType: 'audio/webm;codecs=opus'
+      mimeType: 'audio/webm;codecs=opus',
     });
-    
+
     mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         audioChunks.push(event.data);
       }
     };
-    
-    mediaRecorder.onerror = (event) => {
-      console.error('MediaRecorder error:', event.error);
-    };
-    
+
+    mediaRecorder.onerror = (event) => {};
+
     mediaRecorder.start(1000);
   } catch (error) {
-    console.error('Failed to start audio recording:', error);
     throw error;
   }
 }
@@ -581,24 +651,24 @@ async function startMicrophoneRecording() {
 async function stopRecording() {
   try {
     if (!isRecording) return;
-    
+
     // Show notification that recording is stopping
     if (Notification.permission === 'granted') {
       new Notification('Aura - Stopping Recording', {
         body: 'Processing and saving your meeting...',
-        silent: true
+        silent: true,
       });
     }
-    
+
     setStatus('processing', 'Processing');
     stopAudioVisualization();
     stopTimer();
-    
+
     if (stopButtonInner) {
       stopButtonInner.disabled = true;
       stopButtonInner.classList.remove('recording-pulse');
     }
-    
+
     if (stopButtonContent) {
       stopButtonContent.className = '';
       stopButtonContent.innerHTML = `
@@ -608,62 +678,76 @@ async function stopRecording() {
         </svg>
       `;
     }
-    
+
     updateProgress(1, 'active', 'Saving audio...');
     const audioPath = await stopMicrophoneRecording();
-    
+
     updateProgress(2, 'active', 'Transcribing audio...');
-    
+
     if (noteTaker.currentAudioPath && audioPath && fs.existsSync(audioPath)) {
       const destPath = noteTaker.currentAudioPath;
       const destDir = path.dirname(destPath);
-      
+
       if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, { recursive: true });
       }
-      
+
       fs.copyFileSync(audioPath, destPath);
     }
+
+    // Get current metadata values before stopping
+    const finalTitle = meetingTitleInput.value.trim() || 'Meeting';
+    const finalTemplateId = meetingTemplateSelect
+      ? meetingTemplateSelect.value
+      : 'general';
     
+    // Update noteTaker with final values
+    if (noteTaker) {
+      noteTaker.updateMeetingTitle(finalTitle);
+      noteTaker.updateMeetingTemplate(finalTemplateId);
+      noteTaker.updateMeetingParticipants(participants);
+    }
+
     const result = await noteTaker.stopMeeting({
       onTranscriptionComplete: () => {
         updateProgress(3, 'active', 'Generating summary...');
       },
       onSummarizationComplete: () => {
         updateProgress(4, 'active', 'Saving to vault...');
-      }
+      },
     });
-    
+
     updateProgress(5, 'completed', '✓ Saved successfully!');
     setStatus('ready', 'Ready');
-    
-    if (result.recordingId && noteTaker.currentAudioPath && fs.existsSync(noteTaker.currentAudioPath)) {
+
+    if (
+      result.recordingId &&
+      noteTaker.currentAudioPath &&
+      fs.existsSync(noteTaker.currentAudioPath)
+    ) {
       try {
-        await ipcRenderer.invoke('update-recording', result.recordingId, { audioPath: noteTaker.currentAudioPath });
-      } catch (error) {
-        console.warn('Failed to update recording history:', error);
-      }
+        await ipcRenderer.invoke('update-recording', result.recordingId, {
+          audioPath: noteTaker.currentAudioPath,
+        });
+      } catch (error) {}
     }
-    
+
     // Show notification that recording stopped and notes were saved
     setTimeout(() => {
       const notification = new Notification('Aura - Recording Stopped', {
         body: 'Meeting notes have been saved successfully!',
-        silent: false
+        silent: false,
       });
-      
+
       notification.onclick = () => {
         shell.showItemInFolder(result.notePath);
       };
     }, 500);
-    
+
     setTimeout(() => {
       resetUI();
     }, 2000);
-    
   } catch (error) {
-    console.error('Stop recording error:', error);
-    
     let errorMsg = error.message;
     if (errorMsg.includes('Transcription failed')) {
       updateProgress(0, 'error', 'Transcription failed');
@@ -672,15 +756,15 @@ async function stopRecording() {
     } else {
       updateProgress(0, 'error', errorMsg.substring(0, 50));
     }
-    
+
     // Show notification that recording stopped with error
     if (Notification.permission === 'granted') {
       new Notification('Aura - Recording Stopped', {
         body: `Recording stopped. ${errorMsg.split('\n')[0]}`,
-        silent: false
+        silent: false,
       });
     }
-    
+
     setStatus('ready', 'Ready');
     // resetUI will be called which sends recording-stopped, but ensure state is reset
     setTimeout(resetUI, 5000);
@@ -694,51 +778,48 @@ async function stopMicrophoneRecording() {
         resolve(null);
         return;
       }
-      
+
       mediaRecorder.onstop = async () => {
         try {
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          
+
           if (audioBlob.size === 0) {
-            console.warn('Audio blob is empty - no audio data was captured');
           }
-          
+
           const tempDir = path.join(os.tmpdir(), 'meeting-note-taker');
           if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
           }
-          
+
           const timestamp = Date.now();
           const audioPath = path.join(tempDir, `recording-${timestamp}.webm`);
-          
+
           const buffer = Buffer.from(await audioBlob.arrayBuffer());
           fs.writeFileSync(audioPath, buffer);
-          
+
           if (recordingStream) {
-            recordingStream.getTracks().forEach(track => track.stop());
+            recordingStream.getTracks().forEach((track) => track.stop());
           }
-          
+
           if (audioContext) {
             await audioContext.close();
             audioContext = null;
           }
-          
+
           mediaRecorder = null;
           audioChunks = [];
           recordingStream = null;
           mergedStream = null;
           analyser = null;
-          
+
           resolve(audioPath);
         } catch (error) {
-          console.error('Failed to save recording:', error);
           reject(error);
         }
       };
-      
+
       mediaRecorder.stop();
     } catch (error) {
-      console.error('Failed to stop recording:', error);
       reject(error);
     }
   });
@@ -762,18 +843,18 @@ function stopTimer() {
 
 function setStatus(type, text) {
   if (statusText) statusText.textContent = text;
-  
+
   // Update status dot color if it exists
   if (statusDot) {
-  statusDot.className = 'w-2 h-2 rounded-full';
-  if (type === 'ready') {
-    statusDot.classList.add('bg-green-500');
-  } else if (type === 'recording') {
-    statusDot.classList.add('bg-red-500', 'recording-pulse');
-  } else if (type === 'processing') {
-    statusDot.classList.add('bg-yellow-500');
-  } else if (type === 'warning') {
-    statusDot.classList.add('bg-yellow-500');
+    statusDot.className = 'w-2 h-2 rounded-full';
+    if (type === 'ready') {
+      statusDot.classList.add('bg-green-500');
+    } else if (type === 'recording') {
+      statusDot.classList.add('bg-red-500', 'recording-pulse');
+    } else if (type === 'processing') {
+      statusDot.classList.add('bg-yellow-500');
+    } else if (type === 'warning') {
+      statusDot.classList.add('bg-yellow-500');
     }
   }
 }
@@ -783,50 +864,50 @@ function updateProgress(step, state, message) {
   if (timerDisplay && statusMessage && timer) {
     // Make sure timer container is visible
     timer.classList.remove('hidden');
-    
-            // If this is the first message, hide timer and show status message
-            if (timerDisplay.classList.contains('hidden') === false) {
-              // First time: hide timer, show message
-              timerDisplay.classList.add('hidden');
-              statusMessage.classList.remove('hidden');
-              statusMessage.textContent = message;
-              statusMessage.classList.add('fade-in');
-              
-              // Add special color for success
-              if (message.includes('✓') || state === 'completed') {
-                statusMessage.style.color = '#10b981'; // green
-              } else if (message.includes('❌') || state === 'error') {
-                statusMessage.style.color = '#ef4444'; // red
-  } else {
-                // Check if dark mode is active
-                const isDark = document.documentElement.classList.contains('dark');
-                statusMessage.style.color = isDark ? '#d1d5db' : '#374151'; // gray-300 in dark, gray-700 in light
-              }
-            } else {
+
+    // If this is the first message, hide timer and show status message
+    if (timerDisplay.classList.contains('hidden') === false) {
+      // First time: hide timer, show message
+      timerDisplay.classList.add('hidden');
+      statusMessage.classList.remove('hidden');
+      statusMessage.textContent = message;
+      statusMessage.classList.add('fade-in');
+
+      // Add special color for success
+      if (message.includes('✓') || state === 'completed') {
+        statusMessage.style.color = '#10b981'; // green
+      } else if (message.includes('❌') || state === 'error') {
+        statusMessage.style.color = '#ef4444'; // red
+      } else {
+        // Check if dark mode is active
+        const isDark = document.documentElement.classList.contains('dark');
+        statusMessage.style.color = isDark ? '#d1d5db' : '#374151'; // gray-300 in dark, gray-700 in light
+      }
+    } else {
       // Subsequent messages: animate transition
       // Fade out current message
       statusMessage.classList.remove('fade-in', 'success-pulse', 'error-shake');
       statusMessage.classList.add('fade-out');
-      
+
       // After fade out, change text and fade in
-              setTimeout(() => {
-                statusMessage.textContent = message;
-                statusMessage.classList.remove('fade-out');
-                statusMessage.classList.add('fade-in');
-                
-                // Add special animations and colors for success/error
-                if (message.includes('✓') || state === 'completed') {
-                  statusMessage.style.color = '#10b981'; // green (same in both modes)
-                  statusMessage.classList.add('success-pulse');
-                } else if (message.includes('❌') || state === 'error') {
-                  statusMessage.style.color = '#ef4444'; // red (same in both modes)
-                  statusMessage.classList.add('error-shake');
-                } else {
-                  // Check if dark mode is active
-                  const isDark = document.documentElement.classList.contains('dark');
-                  statusMessage.style.color = isDark ? '#d1d5db' : '#374151'; // gray-300 in dark, gray-700 in light
-                }
-              }, 300); // Match fade-out duration
+      setTimeout(() => {
+        statusMessage.textContent = message;
+        statusMessage.classList.remove('fade-out');
+        statusMessage.classList.add('fade-in');
+
+        // Add special animations and colors for success/error
+        if (message.includes('✓') || state === 'completed') {
+          statusMessage.style.color = '#10b981'; // green (same in both modes)
+          statusMessage.classList.add('success-pulse');
+        } else if (message.includes('❌') || state === 'error') {
+          statusMessage.style.color = '#ef4444'; // red (same in both modes)
+          statusMessage.classList.add('error-shake');
+        } else {
+          // Check if dark mode is active
+          const isDark = document.documentElement.classList.contains('dark');
+          statusMessage.style.color = isDark ? '#d1d5db' : '#374151'; // gray-300 in dark, gray-700 in light
+        }
+      }, 300); // Match fade-out duration
     }
   }
 }
@@ -834,7 +915,7 @@ function updateProgress(step, state, message) {
 function resetUI() {
   const wasRecording = isRecording;
   isRecording = false;
-  
+
   // Notify main process that recording stopped
   if (wasRecording) {
     ipcRenderer.send('recording-stopped');
@@ -843,31 +924,36 @@ function resetUI() {
   recordButton.classList.remove('hidden');
   stopButton.classList.add('hidden');
   stopButton.classList.remove('flex');
-  
+
   if (stopButtonInner) {
     stopButtonInner.classList.add('recording-pulse');
     stopButtonInner.disabled = false;
   }
-  
+
   timerDisplay.textContent = '00:00';
   timerDisplay.classList.remove('hidden');
   statusMessage.classList.add('hidden');
-  statusMessage.classList.remove('fade-in', 'fade-out', 'success-pulse', 'error-shake');
+  statusMessage.classList.remove(
+    'fade-in',
+    'fade-out',
+    'success-pulse',
+    'error-shake'
+  );
   statusMessage.style.color = '';
   statusMessage.textContent = '';
   meetingTitleInput.disabled = false;
   if (meetingTemplateSelect) meetingTemplateSelect.disabled = false;
-  
+
   // Reset stop button content to square
   if (stopButtonContent) {
     stopButtonContent.innerHTML = '';
     stopButtonContent.className = 'w-8 h-8 bg-primary rounded-lg';
   }
-  
+
   // Reset audio bars to initial state
   if (recordingVisual) {
     const bars = recordingVisual.querySelectorAll('.bar');
-    bars.forEach(bar => {
+    bars.forEach((bar) => {
       bar.style.height = '12px';
     });
   }
@@ -878,4 +964,3 @@ if (Notification.permission === 'default') {
 }
 
 init();
-

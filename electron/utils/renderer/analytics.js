@@ -22,7 +22,7 @@ function trackPageView(pageName, pageTitle) {
     gtag('event', 'page_view', {
       page_title: pageTitle,
       page_location: `app://${pageName}`,
-      page_path: `/${pageName}`
+      page_path: `/${pageName}`,
     });
   }
   ipcRenderer.send('analytics-track-page-view', pageName, pageTitle);
@@ -30,6 +30,5 @@ function trackPageView(pageName, pageTitle) {
 
 module.exports = {
   trackEvent,
-  trackPageView
+  trackPageView,
 };
-

@@ -8,7 +8,13 @@ const { app } = require('electron');
  */
 function getUIPath(fileName) {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'app.asar', 'electron', 'ui', fileName);
+    return path.join(
+      process.resourcesPath,
+      'app.asar',
+      'electron',
+      'ui',
+      fileName
+    );
   } else {
     return path.join(__dirname, '../../ui', fileName);
   }
@@ -38,6 +44,5 @@ function getAssetPath(fileName) {
 module.exports = {
   getUIPath,
   getAssetsPath,
-  getAssetPath
+  getAssetPath,
 };
-

@@ -59,7 +59,7 @@ Include any other relevant information such as:
 - Resources or tools mentioned
 - Important context for future reference
 
-Format your response in clean markdown. Be thorough, descriptive, and include specific details, quotes, numbers, and data points from the transcription.`
+Format your response in clean markdown. Be thorough, descriptive, and include specific details, quotes, numbers, and data points from the transcription.`,
   },
 
   sales: {
@@ -115,7 +115,7 @@ Include important quotes from the client that reveal:
 - Decision criteria
 - Concerns or objections
 
-Format your response in clean markdown. Be thorough and include all specific details, numbers, quotes, and data points from the transcription.`
+Format your response in clean markdown. Be thorough and include all specific details, numbers, quotes, and data points from the transcription.`,
   },
 
   interview: {
@@ -174,7 +174,7 @@ Please create a well-structured, descriptive summary with the following sections
 - Additional assessments needed
 - Decision timeline
 
-Format your response in clean markdown. Be thorough and include specific examples, quotes, and details from the interview.`
+Format your response in clean markdown. Be thorough and include specific examples, quotes, and details from the interview.`,
   },
 
   standup: {
@@ -226,7 +226,7 @@ For each team member, document:
 - Help offered or requested
 - Next steps
 
-Format your response in clean markdown. Be concise but thorough, including specific task names, ticket numbers, and details mentioned.`
+Format your response in clean markdown. Be concise but thorough, including specific task names, ticket numbers, and details mentioned.`,
   },
 
   oneOnOne: {
@@ -284,7 +284,7 @@ Please create a well-structured, descriptive summary with the following sections
 - Work-life balance topics
 - Team dynamics or relationships
 
-Format your response in clean markdown. Be thorough and include specific details, quotes, and context. Maintain confidentiality and focus on actionable items.`
+Format your response in clean markdown. Be thorough and include specific details, quotes, and context. Maintain confidentiality and focus on actionable items.`,
   },
 
   retrospective: {
@@ -339,7 +339,7 @@ Please create a well-structured, descriptive summary with the following sections
 - Burnout or stress indicators
 - Support needed
 
-Format your response in clean markdown. Be thorough and include specific examples, quotes, and actionable items.`
+Format your response in clean markdown. Be thorough and include specific examples, quotes, and actionable items.`,
   },
 
   planning: {
@@ -399,8 +399,8 @@ Please create a well-structured, descriptive summary with the following sections
 - Process decisions
 - Resource allocations
 
-Format your response in clean markdown. Be thorough and include specific details, numbers, dates, and actionable items.`
-  }
+Format your response in clean markdown. Be thorough and include specific details, numbers, dates, and actionable items.`,
+  },
 };
 
 /**
@@ -430,7 +430,5 @@ module.exports = {
   MEETING_TEMPLATES,
   getTemplate,
   getAllTemplates,
-  buildPromptFromTemplate
+  buildPromptFromTemplate,
 };
-
-

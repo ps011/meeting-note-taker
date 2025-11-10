@@ -19,35 +19,42 @@ class NoteWriter {
    * @param {string} templateId - Template ID used for the meeting
    * @param {Array} participants - Optional list of participants
    */
-  saveNote(summary, transcription, meetingTitle = 'Meeting', templateId = 'general', participants = []) {
+  saveNote(
+    summary,
+    transcription,
+    meetingTitle = 'Meeting',
+    templateId = 'general',
+    participants = []
+  ) {
     try {
-      console.log('📝 Saving meeting notes...');
-
       if (!fs.existsSync(this.notesPath)) {
         throw new Error(`Notes folder not found at: ${this.notesPath}`);
       }
 
       if (!fs.existsSync(this.notesFolderPath)) {
         fs.mkdirSync(this.notesFolderPath, { recursive: true });
-        console.log(`   Created folder: ${this.notesFolderPath}`);
       }
 
-      const timestamp = this.formatDate(new Date(), 'yyyy-MM-dd-HHmmss');
-      const sanitizedTitle = meetingTitle.replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '-');
-      const filename = `${timestamp}-${sanitizedTitle}.md`;
+      const now = new Date();
+      const dateStr = this.formatDateForFilename(now);
+      const sanitizedTitle = meetingTitle
+        .replace(/[<>:"/\\|?*]/g, '') // Remove invalid filename characters
+        .trim();
+      const filename = `${sanitizedTitle} - ${dateStr}.md`;
       const filePath = path.join(this.notesFolderPath, filename);
 
-      const noteContent = this.formatNote(summary, transcription, meetingTitle, templateId, participants);
+      const noteContent = this.formatNote(
+        summary,
+        transcription,
+        meetingTitle,
+        templateId,
+        participants
+      );
 
       fs.writeFileSync(filePath, noteContent, 'utf-8');
 
-      console.log('✅ Meeting notes saved');
-      console.log(`   File: ${filename}`);
-      console.log(`   Path: ${filePath}`);
-
       return filePath;
     } catch (error) {
-      console.error('❌ Failed to save notes:', error.message);
       throw error;
     }
   }
@@ -55,16 +62,22 @@ class NoteWriter {
   /**
    * Format the meeting note in markdown (Granola.ai style)
    */
-  formatNote(summary, transcription, meetingTitle, templateId = 'general', participants = []) {
+  formatNote(
+    summary,
+    transcription,
+    meetingTitle,
+    templateId = 'general',
+    participants = []
+  ) {
     const now = new Date();
     const date = this.formatDate(now, 'MMMM dd, yyyy');
     const time = this.formatDate(now, 'HH:mm');
     const dateTime = this.formatDate(now, 'yyyy-MM-dd HH:mm:ss');
     const duration = this.calculateDuration(transcription);
-    
+
     const template = getTemplate(templateId);
     const templateName = template ? template.name : 'General Meeting';
-    
+
     // Build participants section
     let participantsSection = '';
     if (participants && participants.length > 0) {
@@ -77,9 +90,9 @@ date: ${date}
 time: ${time}
 datetime: ${dateTime}
 template: ${templateName}
-template_id: ${templateId}
+meeting_type: ${templateId}
 duration: ${duration}
-participants: [${participants.map(p => `"${p}"`).join(', ')}]
+participants: [${participants.map((p) => `"${p}"`).join(', ')}]
 tags: [meeting, notes, auto-generated, ${templateId}]
 ---
 
@@ -131,10 +144,10 @@ ${'```'}
    */
   calculateDuration(transcription) {
     if (!transcription) return 'Unknown';
-    
+
     const wordCount = transcription.split(/\s+/).length;
     const minutes = Math.round(wordCount / 150);
-    
+
     if (minutes < 1) {
       return '< 1 minute';
     } else if (minutes === 1) {
@@ -145,11 +158,45 @@ ${'```'}
   }
 
   /**
+   * Format date for filename: "05 November 2025, Wednesday"
+   */
+  formatDateForFilename(date) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const day = pad(date.getDate());
+    const month = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ][date.getMonth()];
+    const year = date.getFullYear();
+    const dayOfWeek = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ][date.getDay()];
+
+    return `${day} ${month} ${year}, ${dayOfWeek}`;
+  }
+
+  /**
    * Simple date formatting
    */
   formatDate(date, format) {
     const pad = (n) => String(n).padStart(2, '0');
-    
+
     const map = {
       yyyy: date.getFullYear(),
       MM: pad(date.getMonth() + 1),
@@ -157,8 +204,20 @@ ${'```'}
       HH: pad(date.getHours()),
       mm: pad(date.getMinutes()),
       ss: pad(date.getSeconds()),
-      MMMM: ['January', 'February', 'March', 'April', 'May', 'June', 
-             'July', 'August', 'September', 'October', 'November', 'December'][date.getMonth()]
+      MMMM: [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ][date.getMonth()],
     };
 
     return format.replace(/yyyy|MMMM|MM|dd|HH|mm|ss/g, (match) => map[match]);
@@ -176,23 +235,26 @@ ${'```'}
       }
 
       const content = fs.readFileSync(notePath, 'utf-8');
-      
+
       // Extract frontmatter
       const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
       let frontmatter = {};
       if (frontmatterMatch) {
         const frontmatterText = frontmatterMatch[1];
-        frontmatterText.split('\n').forEach(line => {
+        frontmatterText.split('\n').forEach((line) => {
           const match = line.match(/^(\w+):\s*(.+)$/);
           if (match) {
             const key = match[1].trim();
             let value = match[2].trim();
-            
+
             // Parse array values
             if (value.startsWith('[') && value.endsWith(']')) {
-              value = value.slice(1, -1).split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+              value = value
+                .slice(1, -1)
+                .split(',')
+                .map((v) => v.trim().replace(/^["']|["']$/g, ''));
             }
-            
+
             frontmatter[key] = value;
           }
         });
@@ -205,18 +267,40 @@ ${'```'}
         title = titleMatch[1].trim();
       }
 
-      // Extract transcription from code block in details section
+      // Extract transcription from details section
+      // Try code block first, then fall back to all text content in details
       let transcription = '';
-      const transcriptionMatch = content.match(/<details>[\s\S]*?```[\s\S]*?```[\s\S]*?<\/details>/);
-      if (transcriptionMatch) {
-        const codeBlockMatch = transcriptionMatch[0].match(/```[\s\S]*?\n([\s\S]*?)\n```/);
+
+      const detailsMatch = content.match(/<details>[\s\S]*?<\/details>/);
+      if (detailsMatch) {
+        const detailsContent = detailsMatch[0];
+
+        // Try code block first: ```...```
+        const codeBlockMatch = detailsContent.match(/```[\s\S]*?```/);
         if (codeBlockMatch) {
-          transcription = codeBlockMatch[1].trim();
+          transcription = codeBlockMatch[0]
+            .replace(/^```[a-zA-Z]*\s*\n?/, '')
+            .replace(/\n?```$/, '')
+            .trim();
+        } else {
+          // No code block - extract all text content between <summary> and </details>
+          // Remove HTML tags and get just the text
+          const textContent = detailsContent
+            .replace(/<summary>[\s\S]*?<\/summary>/, '') // Remove summary tag
+            .replace(/<[^>]+>/g, '') // Remove all HTML tags
+            .replace(/<\/details>/, '') // Remove closing tag
+            .trim();
+
+          if (textContent.length > 10) {
+            transcription = textContent;
+          }
         }
       }
 
       // Extract summary (content between "## Summary" and "---" or "## Full Transcription")
-      const summaryMatch = content.match(/## Summary\s*\n([\s\S]*?)(?=\n---|\n## Full Transcription)/);
+      const summaryMatch = content.match(
+        /## Summary\s*\n([\s\S]*?)(?=\n---|\n## Full Transcription)/
+      );
       let summary = '';
       if (summaryMatch) {
         summary = summaryMatch[1].trim();
@@ -225,13 +309,17 @@ ${'```'}
       // Extract participants from frontmatter
       let participants = [];
       if (frontmatter.participants) {
-        participants = Array.isArray(frontmatter.participants) 
-          ? frontmatter.participants 
+        participants = Array.isArray(frontmatter.participants)
+          ? frontmatter.participants
           : [frontmatter.participants];
       }
 
-      // Extract template ID
-      const templateId = frontmatter.template_id || frontmatter.templateId || 'general';
+      // Extract template ID from meeting_type (fallback to template_id for backward compatibility)
+      const templateId =
+        frontmatter.meeting_type ||
+        frontmatter.template_id ||
+        frontmatter.templateId ||
+        'general';
 
       return {
         title,
@@ -240,10 +328,9 @@ ${'```'}
         templateId,
         participants,
         frontmatter,
-        originalPath: notePath
+        originalPath: notePath,
       };
     } catch (error) {
-      console.error('Failed to parse note:', error.message);
       throw error;
     }
   }
@@ -257,7 +344,7 @@ ${'```'}
   updateNote(notePath, newSummary, newTemplateId) {
     try {
       const parsed = this.parseNote(notePath);
-      
+
       // Update the note with new summary and template
       const updatedNote = this.formatNote(
         newSummary,
@@ -269,16 +356,14 @@ ${'```'}
 
       // Preserve original file modification time
       const stats = fs.statSync(notePath);
-      
+
       fs.writeFileSync(notePath, updatedNote, 'utf-8');
-      
+
       // Restore original modification time
       fs.utimesSync(notePath, stats.atime, stats.mtime);
 
-      console.log('✅ Note updated successfully');
       return notePath;
     } catch (error) {
-      console.error('❌ Failed to update note:', error.message);
       throw error;
     }
   }
@@ -292,9 +377,10 @@ ${'```'}
         return [];
       }
 
-      const files = fs.readdirSync(this.notesFolderPath)
-        .filter(file => file.endsWith('.md'))
-        .map(file => ({
+      const files = fs
+        .readdirSync(this.notesFolderPath)
+        .filter((file) => file.endsWith('.md'))
+        .map((file) => ({
           name: file,
           path: path.join(this.notesFolderPath, file),
           created: fs.statSync(path.join(this.notesFolderPath, file)).birthtime,
@@ -303,11 +389,9 @@ ${'```'}
 
       return files;
     } catch (error) {
-      console.error('Failed to list notes:', error.message);
       return [];
     }
   }
 }
 
 module.exports = { NoteWriter };
-

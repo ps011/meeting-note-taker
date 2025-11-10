@@ -19,15 +19,15 @@ class Analytics {
   // Track page views
   trackPageView(pageName, pageTitle) {
     if (!this.isEnabled) return;
-    
+
     const data = {
       page_title: pageTitle || pageName,
       page_location: `app://${pageName}`,
       page_path: `/${pageName}`,
       custom_map: {
         dimension1: this.userId,
-        dimension2: this.sessionId
-      }
+        dimension2: this.sessionId,
+      },
     };
 
     this.sendEvent('page_view', data);
@@ -43,9 +43,9 @@ class Analytics {
       value: parameters.value || 0,
       custom_map: {
         dimension1: this.userId,
-        dimension2: this.sessionId
+        dimension2: this.sessionId,
       },
-      ...parameters
+      ...parameters,
     };
 
     this.sendEvent(eventName, data);
@@ -55,14 +55,14 @@ class Analytics {
   trackAppStart() {
     this.trackEvent('app_start', {
       category: 'app_lifecycle',
-      label: 'application_started'
+      label: 'application_started',
     });
   }
 
   trackAppClose() {
     this.trackEvent('app_close', {
       category: 'app_lifecycle',
-      label: 'application_closed'
+      label: 'application_closed',
     });
   }
 
@@ -71,7 +71,7 @@ class Analytics {
     this.trackEvent('recording_start', {
       category: 'recording',
       label: 'recording_started',
-      value: duration
+      value: duration,
     });
   }
 
@@ -79,7 +79,7 @@ class Analytics {
     this.trackEvent('recording_stop', {
       category: 'recording',
       label: 'recording_stopped',
-      value: duration
+      value: duration,
     });
   }
 
@@ -87,7 +87,7 @@ class Analytics {
   trackTranscriptionStart() {
     this.trackEvent('transcription_start', {
       category: 'transcription',
-      label: 'transcription_started'
+      label: 'transcription_started',
     });
   }
 
@@ -96,7 +96,7 @@ class Analytics {
       category: 'transcription',
       label: 'transcription_completed',
       value: duration,
-      custom_parameter_1: wordCount
+      custom_parameter_1: wordCount,
     });
   }
 
@@ -104,7 +104,7 @@ class Analytics {
   trackSummarizationStart() {
     this.trackEvent('summarization_start', {
       category: 'summarization',
-      label: 'summarization_started'
+      label: 'summarization_started',
     });
   }
 
@@ -112,7 +112,7 @@ class Analytics {
     this.trackEvent('summarization_complete', {
       category: 'summarization',
       label: 'summarization_completed',
-      value: duration
+      value: duration,
     });
   }
 
@@ -122,7 +122,7 @@ class Analytics {
       category: 'settings',
       label: settingName,
       custom_parameter_1: oldValue,
-      custom_parameter_2: newValue
+      custom_parameter_2: newValue,
     });
   }
 
@@ -132,7 +132,7 @@ class Analytics {
       category: 'error',
       label: errorType,
       custom_parameter_1: errorMessage,
-      custom_parameter_2: errorContext
+      custom_parameter_2: errorContext,
     });
   }
 
@@ -143,31 +143,26 @@ class Analytics {
     try {
       // In a real implementation, you would send this to Google Analytics
       // For now, we'll log it and potentially send via IPC to renderer
-      console.log(`[Analytics] ${eventName}:`, data);
-      
+
       // Send to renderer process if available
       if (typeof ipcRenderer !== 'undefined') {
         ipcRenderer.send('analytics-event', {
           eventName,
           data,
-          trackingId: this.trackingId
+          trackingId: this.trackingId,
         });
       }
-    } catch (error) {
-      console.error('Analytics error:', error);
-    }
+    } catch (error) {}
   }
 
   // Enable/disable analytics
   setEnabled(enabled) {
     this.isEnabled = enabled;
-    console.log(`Analytics ${enabled ? 'enabled' : 'disabled'}`);
   }
 
   // Update tracking ID
   setTrackingId(trackingId) {
     this.trackingId = trackingId;
-    console.log('Analytics tracking ID updated:', trackingId);
   }
 }
 
@@ -176,13 +171,19 @@ const analytics = new Analytics();
 
 // IPC handlers for main process
 if (typeof ipcMain !== 'undefined') {
-  ipcMain.handle('analytics-track-event', async (event, eventName, parameters) => {
-    analytics.trackEvent(eventName, parameters);
-  });
+  ipcMain.handle(
+    'analytics-track-event',
+    async (event, eventName, parameters) => {
+      analytics.trackEvent(eventName, parameters);
+    }
+  );
 
-  ipcMain.handle('analytics-track-page-view', async (event, pageName, pageTitle) => {
-    analytics.trackPageView(pageName, pageTitle);
-  });
+  ipcMain.handle(
+    'analytics-track-page-view',
+    async (event, pageName, pageTitle) => {
+      analytics.trackPageView(pageName, pageTitle);
+    }
+  );
 
   ipcMain.handle('analytics-set-enabled', async (event, enabled) => {
     analytics.setEnabled(enabled);

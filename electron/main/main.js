@@ -1,11 +1,28 @@
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, dialog, shell, systemPreferences } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  Tray,
+  nativeImage,
+  dialog,
+  shell,
+  systemPreferences,
+} = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 const Config = require('./config');
 const DependencyChecker = require('./dependencyChecker');
 const analytics = require('./analytics');
-const { createWindow: createMainWindow, createSetupWindow: createSetupWindowUtil } = require('../utils/main/window');
-const { updateTrayIcon, updateTrayMenu, setupTrayClickHandlers } = require('../utils/main/tray');
+const {
+  createWindow: createMainWindow,
+  createSetupWindow: createSetupWindowUtil,
+} = require('../utils/main/window');
+const {
+  updateTrayIcon,
+  updateTrayMenu,
+  setupTrayClickHandlers,
+} = require('../utils/main/tray');
 const { loadBaseTrayIcon } = require('../utils/main/trayIcon');
 
 let mainWindow;
@@ -37,16 +54,21 @@ function updateTrayMenuLocal() {
 function createTray() {
   // Load base icon
   baseTrayIcon = loadBaseTrayIcon();
-  
+
   tray = new Tray(baseTrayIcon);
-  
+
   // Set initial menu
   updateTrayMenuLocal();
-  
+
   tray.setToolTip('Aura - Meeting Recorder');
-  
+
   // Setup click handlers
-  setupTrayClickHandlers(tray, () => isRecording, mainWindow, updateTrayMenuLocal);
+  setupTrayClickHandlers(
+    tray,
+    () => isRecording,
+    mainWindow,
+    updateTrayMenuLocal
+  );
 }
 
 function createSetupWindow() {
@@ -59,7 +81,7 @@ function createSetupWindow() {
 app.whenReady().then(() => {
   // Track app start
   analytics.trackAppStart();
-  
+
   // Check if setup is completed
   if (Config.isSetupCompleted()) {
     createWindow();
@@ -125,9 +147,9 @@ ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory', 'createDirectory'],
     title: 'Select Notes Folder',
-    buttonLabel: 'Select Folder'
+    buttonLabel: 'Select Folder',
   });
-  
+
   if (!result.canceled && result.filePaths.length > 0) {
     return result.filePaths[0];
   }
@@ -140,15 +162,18 @@ ipcMain.handle('select-audio-file', async () => {
     title: 'Select Audio File',
     buttonLabel: 'Select File',
     filters: [
-      { name: 'Audio Files', extensions: ['mp3', 'wav', 'webm', 'm4a', 'ogg', 'flac', 'aac'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
+      {
+        name: 'Audio Files',
+        extensions: ['mp3', 'wav', 'webm', 'm4a', 'ogg', 'flac', 'aac'],
+      },
+      { name: 'All Files', extensions: ['*'] },
+    ],
   });
-  
+
   if (!result.canceled && result.filePaths.length > 0) {
     return {
       filePath: result.filePaths[0],
-      fileName: path.basename(result.filePaths[0])
+      fileName: path.basename(result.filePaths[0]),
     };
   }
   return null;
@@ -157,15 +182,17 @@ ipcMain.handle('select-audio-file', async () => {
 ipcMain.on('setup-complete', (event, config) => {
   // Save configuration
   Config.save(config);
-  
+
   // Track setup completion
   analytics.trackEvent('setup_complete', {
     category: 'setup',
     label: 'setup_wizard_completed',
-    custom_parameter_1: config.notesPath ? 'notes_path_configured' : 'no_notes_path',
-    custom_parameter_2: config.llamaModel || 'default_model'
+    custom_parameter_1: config.notesPath
+      ? 'notes_path_configured'
+      : 'no_notes_path',
+    custom_parameter_2: config.llamaModel || 'default_model',
   });
-  
+
   // Ensure notes folder exists
   if (config.notesPath) {
     const fs = require('fs');
@@ -173,13 +200,13 @@ ipcMain.on('setup-complete', (event, config) => {
       fs.mkdirSync(config.notesPath, { recursive: true });
     }
   }
-  
+
   // Close setup window
   if (setupWindow) {
     setupWindow.close();
     setupWindow = null;
   }
-  
+
   // Create main window
   createWindow();
   createTray();
@@ -189,7 +216,7 @@ ipcMain.on('setup-complete', (event, config) => {
 ipcMain.on('save-config', (event, config) => {
   // Save configuration without changing windows
   Config.save(config);
-  
+
   // Ensure notes folder exists
   if (config.notesPath) {
     const fs = require('fs');
@@ -202,12 +229,12 @@ ipcMain.on('save-config', (event, config) => {
 ipcMain.on('setup-skip', () => {
   // User skipped setup, still create main window but with warnings
   Config.save({ setupCompleted: false });
-  
+
   if (setupWindow) {
     setupWindow.close();
     setupWindow = null;
   }
-  
+
   createWindow();
   createTray();
 });
@@ -220,23 +247,22 @@ ipcMain.handle('check-screen-recording-permission', async () => {
       const { desktopCapturer } = require('electron');
       const sources = await desktopCapturer.getSources({
         types: ['screen'],
-        thumbnailSize: { width: 0, height: 0 }
+        thumbnailSize: { width: 0, height: 0 },
       });
-      
+
       // If we got sources, permission is truly granted
       const granted = sources && sources.length > 0;
-      
+
       return {
         granted: granted,
         status: granted ? 'granted' : 'denied',
-        sourceCount: sources ? sources.length : 0
+        sourceCount: sources ? sources.length : 0,
       };
     } catch (error) {
-      console.error('Error checking screen recording permission:', error);
       return {
         granted: false,
         status: 'error',
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -247,12 +273,17 @@ ipcMain.handle('open-system-preferences', async (event, pane) => {
   if (process.platform === 'darwin') {
     // Try to open System Settings to Privacy & Security
     // Note: We can't directly open Screen Recording, but we can get close
-    exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"', (error) => {
-      if (error) {
-        // Fallback to just opening System Settings
-        shell.openExternal('x-apple.systempreferences:com.apple.preference.security');
+    exec(
+      'open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"',
+      (error) => {
+        if (error) {
+          // Fallback to just opening System Settings
+          shell.openExternal(
+            'x-apple.systempreferences:com.apple.preference.security'
+          );
+        }
       }
-    });
+    );
     return true;
   }
   return false;
@@ -277,7 +308,6 @@ ipcMain.handle('get-desktop-sources', async (event, options) => {
     const sources = await desktopCapturer.getSources(options);
     return { success: true, sources: sources };
   } catch (error) {
-    console.error('Error getting desktop sources:', error);
     return { success: false, error: error.message };
   }
 });
@@ -285,12 +315,12 @@ ipcMain.handle('get-desktop-sources', async (event, options) => {
 // Dependency management handlers
 ipcMain.handle('check-dependencies', async (event) => {
   const checker = new DependencyChecker();
-  
+
   // Check all dependencies and send progress updates
   const result = await checker.checkAll((progress) => {
     event.sender.send('dependency-progress', progress);
   });
-  
+
   return result;
 });
 
@@ -300,46 +330,14 @@ ipcMain.handle('debug-environment', async (event) => {
   return { success: true };
 });
 
-ipcMain.handle('debug-whisper', async (event) => {
-  const checker = new DependencyChecker();
-  console.log('=== Whisper Debug ===');
-  
-  // Check pip
-  const pipCheck = await checker.checkWhisperViaPip();
-  console.log('Pip check result:', pipCheck);
-  
-  // Try various Python commands
-  const pythonCommands = [
-    'python3 --version',
-    '/usr/bin/python3 --version',
-    '/usr/local/bin/python3 --version',
-    '/opt/homebrew/bin/python3 --version',
-    'python3 -c "import sys; print(sys.path)"',
-    'python3 -c "import whisper; print(whisper.__version__)"'
-  ];
-  
-  for (const cmd of pythonCommands) {
-    const result = await checker.executeCommand(cmd, 5000);
-    console.log(`Command: ${cmd}`);
-    console.log(`Success: ${result.success}`);
-    if (result.success) {
-      console.log(`Output: ${result.stdout}`);
-    } else {
-      console.log(`Error: ${result.error}`);
-    }
-  }
-  
-  return { success: true };
-});
-
 ipcMain.handle('install-dependencies', async (event, missingDeps) => {
   const checker = new DependencyChecker();
-  
+
   // Install missing dependencies with progress updates
   const result = await checker.installMissing(missingDeps, (progress) => {
     event.sender.send('dependency-progress', progress);
   });
-  
+
   return result;
 });
 
@@ -350,34 +348,34 @@ ipcMain.handle('check-ollama-running', async (event) => {
 
 ipcMain.handle('start-ollama', async (event) => {
   const checker = new DependencyChecker();
-  
+
   const result = await checker.startOllama((progress) => {
     event.sender.send('dependency-progress', progress);
   });
-  
+
   return result;
 });
 
 ipcMain.handle('pull-ollama-model', async (event, modelName) => {
   const checker = new DependencyChecker();
-  
+
   const result = await checker.pullOllamaModel(modelName, (progress) => {
     event.sender.send('dependency-progress', progress);
   });
-  
+
   return result;
 });
 
 ipcMain.handle('run-full-dependency-setup', async (event, options) => {
   const checker = new DependencyChecker();
-  
+
   const result = await checker.runFullSetup({
     ...options,
     progressCallback: (progress) => {
       event.sender.send('dependency-progress', progress);
-    }
+    },
   });
-  
+
   return result;
 });
 
@@ -386,17 +384,16 @@ ipcMain.handle('get-all-recordings', async (event) => {
   try {
     const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
     const config = Config.getAll();
-    
+
     if (!config || !config.notesPath) {
       return { success: false, error: 'Not configured' };
     }
-    
+
     const noteTaker = new MeetingNoteTaker(config);
     const recordings = noteTaker.getAllRecordings();
-    
+
     return { success: true, recordings: recordings };
   } catch (error) {
-    console.error('Error getting recordings:', error);
     return { success: false, error: error.message };
   }
 });
@@ -405,21 +402,20 @@ ipcMain.handle('get-recording', async (event, recordingId) => {
   try {
     const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
     const config = Config.getAll();
-    
+
     if (!config || !config.notesPath) {
       return { success: false, error: 'Not configured' };
     }
-    
+
     const noteTaker = new MeetingNoteTaker(config);
     const recording = noteTaker.getRecording(recordingId);
-    
+
     if (!recording) {
       return { success: false, error: 'Recording not found' };
     }
-    
+
     return { success: true, recording: recording };
   } catch (error) {
-    console.error('Error getting recording:', error);
     return { success: false, error: error.message };
   }
 });
@@ -428,58 +424,51 @@ ipcMain.handle('retry-transcription', async (event, recordingId) => {
   try {
     const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
     const config = Config.getAll();
-    
+
     if (!config || !config.notesPath) {
       return { success: false, error: 'Not configured' };
     }
-    
+
     const noteTaker = new MeetingNoteTaker(config);
-    
+
     // Send initial progress update immediately (before any async operations)
     try {
-      event.sender.send('retry-progress', { 
-        recordingId, 
-        step: 0, 
-        total: 3, 
-        message: 'Starting retry...' 
+      event.sender.send('retry-progress', {
+        recordingId,
+        step: 0,
+        total: 3,
+        message: 'Starting retry...',
       });
-      console.log('Sent initial retry progress for:', recordingId);
-    } catch (error) {
-      console.error('Error sending initial progress:', error);
-    }
-    
+    } catch (error) {}
+
     const result = await noteTaker.retryTranscription(recordingId, {
       onProgress: (progress) => {
-        console.log('Sending retry progress:', progress);
         try {
           event.sender.send('retry-progress', { recordingId, ...progress });
-        } catch (error) {
-          console.error('Error sending retry progress:', error);
-        }
+        } catch (error) {}
       },
       onTranscriptionComplete: () => {
-        event.sender.send('retry-progress', { 
-          recordingId, 
-          step: 1, 
-          total: 3, 
+        event.sender.send('retry-progress', {
+          recordingId,
+          step: 1,
+          total: 3,
           message: 'Transcription complete',
-          transcriptionComplete: true 
+          transcriptionComplete: true,
         });
       },
       onSummarizationComplete: () => {
-        event.sender.send('retry-progress', { 
-          recordingId, 
-          step: 2, 
-          total: 3, 
+        event.sender.send('retry-progress', {
+          recordingId,
+          step: 2,
+          total: 3,
           message: 'Summary complete',
-          summarizationComplete: true 
+          summarizationComplete: true,
         });
-      }
+      },
     });
-    
+
     return { success: true, ...result };
   } catch (error) {
-    console.error('Error retrying transcription:', error);
     return { success: false, error: error.message };
   }
 });
@@ -488,17 +477,16 @@ ipcMain.handle('delete-recording', async (event, recordingId) => {
   try {
     const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
     const config = Config.getAll();
-    
+
     if (!config || !config.notesPath) {
       return { success: false, error: 'Not configured' };
     }
-    
+
     const noteTaker = new MeetingNoteTaker(config);
     const success = noteTaker.deleteRecording(recordingId);
-    
+
     return { success: success };
   } catch (error) {
-    console.error('Error deleting recording:', error);
     return { success: false, error: error.message };
   }
 });
@@ -507,17 +495,16 @@ ipcMain.handle('update-recording', async (event, recordingId, updates) => {
   try {
     const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
     const config = Config.getAll();
-    
+
     if (!config || !config.notesPath) {
       return { success: false, error: 'Not configured' };
     }
-    
+
     const noteTaker = new MeetingNoteTaker(config);
     const success = noteTaker.updateRecordingPath(recordingId, updates);
-    
+
     return { success: success };
   } catch (error) {
-    console.error('Error updating recording:', error);
     return { success: false, error: error.message };
   }
 });
@@ -526,39 +513,33 @@ ipcMain.handle('convert-note', async (event, notePath, newTemplateId) => {
   try {
     const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
     const config = Config.getAll();
-    
+
     if (!config || !config.notesPath) {
       return { success: false, error: 'Not configured' };
     }
-    
+
     const noteTaker = new MeetingNoteTaker(config);
-    
+
     // Send initial progress update
     try {
-      event.sender.send('convert-progress', { 
+      event.sender.send('convert-progress', {
         notePath,
-        step: 0, 
-        total: 3, 
-        message: 'Starting conversion...' 
+        step: 0,
+        total: 3,
+        message: 'Starting conversion...',
       });
-    } catch (error) {
-      console.error('Error sending initial progress:', error);
-    }
-    
+    } catch (error) {}
+
     const result = await noteTaker.convertNote(notePath, newTemplateId, {
       onProgress: (progress) => {
-        console.log('Sending convert progress:', progress);
         try {
           event.sender.send('convert-progress', { notePath, ...progress });
-        } catch (error) {
-          console.error('Error sending convert progress:', error);
-        }
-      }
+        } catch (error) {}
+      },
     });
-    
+
     return { success: true, ...result };
   } catch (error) {
-    console.error('Error converting note:', error);
     return { success: false, error: error.message };
   }
 });
@@ -569,8 +550,6 @@ ipcMain.handle('get-all-templates', async () => {
     const templates = getAllTemplates();
     return { success: true, templates };
   } catch (error) {
-    console.error('Error getting templates:', error);
     return { success: false, error: error.message };
   }
 });
-

@@ -1,0 +1,68 @@
+import js from '@eslint/js';
+import prettier from 'eslint-plugin-prettier';
+import prettierConfig from 'eslint-config-prettier';
+
+export default [
+  js.configs.recommended,
+  prettierConfig,
+  {
+    plugins: {
+      prettier,
+    },
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        global: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        IntersectionObserver: 'readonly',
+        fetch: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        alert: 'readonly',
+        confirm: 'readonly',
+        Notification: 'readonly',
+        CustomEvent: 'readonly',
+        AudioContext: 'readonly',
+        MediaRecorder: 'readonly',
+        Blob: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        gtag: 'readonly',
+      },
+    },
+    rules: {
+      'prettier/prettier': 'error',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-console': 'off',
+      'no-empty': ['warn', { allowEmptyCatch: true }],
+      'no-useless-catch': 'warn',
+    },
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      '*.log',
+      '*.lock',
+      'package-lock.json',
+      '*.dmg',
+      '*.zip',
+      '*.blockmap',
+      '*.asar',
+    ],
+  },
+];

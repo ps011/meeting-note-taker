@@ -16,9 +16,9 @@ function createWindow(app) {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      enableRemoteModule: true
+      enableRemoteModule: true,
     },
-    icon: getAssetPath('icon.icns')
+    icon: getAssetPath('icon.icns'),
   });
 
   mainWindow.loadFile(getUIPath('index.html'));
@@ -39,7 +39,7 @@ function createWindow(app) {
       mainWindow.hide();
     }
   });
-  
+
   return mainWindow;
 }
 
@@ -55,9 +55,9 @@ function createSetupWindow() {
     backgroundColor: '#1e1e1e',
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
     },
-    icon: getAssetPath('icon.icns')
+    icon: getAssetPath('icon.icns'),
   });
 
   setupWindow.loadFile(getUIPath('setup.html'));
@@ -69,12 +69,11 @@ function createSetupWindow() {
   setupWindow.on('closed', () => {
     // Note: This doesn't clear the reference, caller should handle that
   });
-  
+
   return setupWindow;
 }
 
 module.exports = {
   createWindow,
-  createSetupWindow
+  createSetupWindow,
 };
-

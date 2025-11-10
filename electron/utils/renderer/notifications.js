@@ -9,15 +9,15 @@ function showNotification(title, body, silent = false) {
   if (Notification.permission === 'granted') {
     return new Notification(title, {
       body,
-      silent
+      silent,
     });
   } else if (Notification.permission === 'default') {
     // Request permission if not yet requested
-    Notification.requestPermission().then(permission => {
+    Notification.requestPermission().then((permission) => {
       if (permission === 'granted') {
         return new Notification(title, {
           body,
-          silent
+          silent,
         });
       }
     });
@@ -43,6 +43,5 @@ function showNotificationWithClick(title, body, onClick, silent = false) {
 
 module.exports = {
   showNotification,
-  showNotificationWithClick
+  showNotificationWithClick,
 };
-

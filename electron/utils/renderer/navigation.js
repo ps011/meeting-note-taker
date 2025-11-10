@@ -8,7 +8,7 @@ function navigateToPage(url) {
   if (document.body) {
     document.body.style.opacity = '0';
     document.body.style.transition = 'opacity 0.25s ease-out';
-    
+
     // Navigate after animation starts
     setTimeout(() => {
       window.location.href = url;
@@ -57,6 +57,5 @@ module.exports = {
   openRecordingsPage,
   openSettingsPage,
   openMainPage,
-  navigateToPage
+  navigateToPage,
 };
-

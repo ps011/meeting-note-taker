@@ -56,7 +56,7 @@ function initializeDependencyChecker() {
     </div>
   `;
   dependencyActions.classList.remove('hidden');
-  
+
   // Auto-check on first load
   setTimeout(() => {
     checkDepsButton.click();
@@ -64,10 +64,10 @@ function initializeDependencyChecker() {
 }
 
 function createDependencyItem(dep) {
-  const statusIcon = dep.installed 
+  const statusIcon = dep.installed
     ? '<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
     : '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
-  
+
   const statusClass = dep.installed
     ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
     : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
@@ -89,27 +89,33 @@ function createDependencyItem(dep) {
 function updateDependencyItem(depName, status, message) {
   const depId = `dep-${depName.toLowerCase().replace(/\s+/g, '-')}`;
   const depElement = document.getElementById(depId);
-  
+
   if (!depElement) return;
 
   let statusIcon, statusClass, statusText;
-  
+
   if (status === 'installing') {
-    statusIcon = '<svg class="w-5 h-5 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
-    statusClass = 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800';
+    statusIcon =
+      '<svg class="w-5 h-5 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+    statusClass =
+      'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800';
     statusText = 'Installing...';
   } else if (status === 'success') {
-    statusIcon = '<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-    statusClass = 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800';
+    statusIcon =
+      '<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+    statusClass =
+      'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800';
     statusText = 'Installed';
   } else if (status === 'error') {
-    statusIcon = '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
-    statusClass = 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
+    statusIcon =
+      '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+    statusClass =
+      'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
     statusText = 'Failed';
   }
 
   depElement.className = `flex items-center gap-3 p-3 ${statusClass} border rounded-lg`;
-  
+
   const statusSpan = depElement.querySelector('span');
   if (statusSpan) {
     statusSpan.textContent = statusText;
@@ -137,36 +143,42 @@ async function checkDependencies() {
       </svg>
       Checking...
     `;
-    
+
     overallProgress.classList.remove('hidden');
-    dependencyStatus.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400">Checking dependencies...</div>';
-    
+    dependencyStatus.innerHTML =
+      '<div class="text-center text-gray-500 dark:text-gray-400">Checking dependencies...</div>';
+
     const result = await ipcRenderer.invoke('check-dependencies');
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to check dependencies');
     }
 
     // Display results
-    dependencyStatus.innerHTML = result.results.map(dep => createDependencyItem(dep)).join('');
-    
+    dependencyStatus.innerHTML = result.results
+      .map((dep) => createDependencyItem(dep))
+      .join('');
+
     missingDependencies = result.missing;
     dependenciesChecked = true;
     allDependenciesInstalled = result.allInstalled;
 
     if (result.allInstalled) {
       overallProgress.classList.add('hidden');
-      installDepsButton.classList.add('hidden');  
+      installDepsButton.classList.add('hidden');
     } else {
       installDepsButton.classList.remove('hidden');
-      
-      dependencyStatus.insertAdjacentHTML('beforeend', `
+
+      dependencyStatus.insertAdjacentHTML(
+        'beforeend',
+        `
         <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
           <p class="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
             ⚠️ ${result.missing.length} dependencies are missing. Click "Install Missing Dependencies" to continue.
           </p>
         </div>
-      `);
+      `
+      );
     }
 
     checkDepsButton.disabled = false;
@@ -176,13 +188,11 @@ async function checkDependencies() {
       </svg>
       Re-check Dependencies
     `;
-    
+
     // Update complete button state based on vault and dependency status
     const vaultReady = selectedPath && fs.existsSync(selectedPath);
     updateCompleteButtonState(vaultReady);
-
   } catch (error) {
-    console.error('Error checking dependencies:', error);
     dependencyStatus.innerHTML = `
       <div class="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
         <p class="text-sm text-red-800 dark:text-red-200">
@@ -199,7 +209,7 @@ async function installDependencies() {
   try {
     installDepsButton.disabled = true;
     checkDepsButton.disabled = true;
-    
+
     installDepsButton.innerHTML = `
       <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -210,7 +220,10 @@ async function installDependencies() {
     overallProgress.classList.remove('hidden');
     updateProgress(0, 'Starting installation...');
 
-    const result = await ipcRenderer.invoke('install-dependencies', missingDependencies);
+    const result = await ipcRenderer.invoke(
+      'install-dependencies',
+      missingDependencies
+    );
 
     if (!result.success) {
       throw new Error('Some dependencies failed to install');
@@ -218,23 +231,23 @@ async function installDependencies() {
 
     // Re-check after installation
     updateProgress(100, 'Verifying installation...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     await checkDependencies();
-    
+
     installDepsButton.classList.add('hidden');
     overallProgress.classList.add('hidden');
-
   } catch (error) {
-    console.error('Error installing dependencies:', error);
-    
-    dependencyStatus.insertAdjacentHTML('beforeend', `
+    dependencyStatus.insertAdjacentHTML(
+      'beforeend',
+      `
       <div class="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
         <p class="text-sm text-red-800 dark:text-red-200">
           ❌ Installation failed: ${error.message}
         </p>
       </div>
-    `);
+    `
+    );
 
     installDepsButton.disabled = false;
     checkDepsButton.disabled = false;
@@ -250,11 +263,17 @@ async function installDependencies() {
 // Listen for dependency progress updates
 ipcRenderer.on('dependency-progress', (event, progress) => {
   if (progress.step === 'checking') {
-    updateProgress(progress.progress || 0, `Checking ${progress.dependency}...`);
+    updateProgress(
+      progress.progress || 0,
+      `Checking ${progress.dependency}...`
+    );
   } else if (progress.step === 'installing') {
     if (progress.status === 'in-progress' || progress.status === 'starting') {
       updateDependencyItem(progress.dependency, 'installing');
-      updateProgress(progress.progress || 50, `Installing ${progress.dependency}...`);
+      updateProgress(
+        progress.progress || 50,
+        `Installing ${progress.dependency}...`
+      );
     } else if (progress.status === 'success') {
       updateDependencyItem(progress.dependency, 'success');
     } else if (progress.status === 'error') {
@@ -317,13 +336,14 @@ ipcRenderer.invoke('get-config').then((config) => {
   if (config.llamaApiUrl) {
     llamaApiUrlInput.value = config.llamaApiUrl;
   }
-  
+
   // Update button text based on whether this is initial setup or settings
   if (config.setupCompleted) {
     skipButton.textContent = 'Cancel';
     completeButton.textContent = 'Save Settings';
     document.querySelector('h1').textContent = 'Settings';
-    document.querySelector('h1').nextElementSibling.textContent = 'Update your configuration';
+    document.querySelector('h1').nextElementSibling.textContent =
+      'Update your configuration';
   }
 });
 
@@ -333,27 +353,30 @@ browseButton.addEventListener('click', async () => {
     selectedPath = result;
     vaultPathInput.value = result;
     checkVaultPath(result);
-    
+
     // Save the path to config immediately
     ipcRenderer.send('save-config', {
-      notesPath: result
+      notesPath: result,
     });
   }
 });
 
 function checkVaultPath(path) {
   const exists = fs.existsSync(path);
-  
+
   vaultStatus.classList.remove('hidden');
-  
+
   if (exists) {
-    vaultStatus.className = 'p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200';
+    vaultStatus.className =
+      'p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200';
     vaultStatus.textContent = '✓ Folder exists and is ready to use';
     createVaultButton.classList.add('hidden');
     updateCompleteButtonState(true);
   } else {
-    vaultStatus.className = 'p-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-200';
-    vaultStatus.textContent = '⚠️ Folder does not exist. You can create it below.';
+    vaultStatus.className =
+      'p-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-200';
+    vaultStatus.textContent =
+      '⚠️ Folder does not exist. You can create it below.';
     createVaultButton.classList.remove('hidden');
     updateCompleteButtonState(false);
   }
@@ -361,9 +384,10 @@ function checkVaultPath(path) {
 
 function updateCompleteButtonState(vaultReady) {
   // Can complete if notes folder is ready AND either all dependencies are installed OR dependencies were checked
-  const canComplete = vaultReady && (allDependenciesInstalled || dependenciesChecked);
+  const canComplete =
+    vaultReady && (allDependenciesInstalled || dependenciesChecked);
   completeButton.disabled = !canComplete;
-  
+
   if (!canComplete && !allDependenciesInstalled && dependenciesChecked) {
     completeButton.title = 'Please install all dependencies first';
   } else if (!canComplete && !vaultReady) {
@@ -377,13 +401,15 @@ createVaultButton.addEventListener('click', () => {
   try {
     // Create directory
     fs.mkdirSync(selectedPath, { recursive: true });
-    
-    vaultStatus.className = 'p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200';
+
+    vaultStatus.className =
+      'p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200';
     vaultStatus.textContent = '✓ Folder created successfully!';
     createVaultButton.classList.add('hidden');
     updateCompleteButtonState(true);
   } catch (error) {
-    vaultStatus.className = 'p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-200';
+    vaultStatus.className =
+      'p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-200';
     vaultStatus.textContent = `❌ Failed to create folder: ${error.message}`;
   }
 });
@@ -429,12 +455,13 @@ completeButton.addEventListener('click', () => {
     notesPath: selectedPath,
     llamaModel: llamaModelInput.value.trim() || 'llama3',
     whisperModel: whisperModelSelect.value,
-    llamaApiUrl: llamaApiUrlInput.value.trim() || 'http://localhost:11434/api/generate',
+    llamaApiUrl:
+      llamaApiUrlInput.value.trim() || 'http://localhost:11434/api/generate',
     sampleRate: 16000,
     channels: 1,
     setupCompleted: true,
     dependenciesChecked: dependenciesChecked,
-    dependenciesInstalled: allDependenciesInstalled
+    dependenciesInstalled: allDependenciesInstalled,
   };
 
   // Save config
@@ -449,4 +476,3 @@ completeButton.addEventListener('click', () => {
     }
   });
 });
-

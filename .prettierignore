@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+*.log
+*.lock
+package-lock.json
+*.dmg
+*.zip
+*.blockmap
+*.asar
+*.icns
+*.png
+*.svg
+*.html
+*.css
+

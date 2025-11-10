@@ -32,60 +32,17 @@
       }
     }
   </script>
+  <link rel="stylesheet" href="../styles/styles.css">
   <style>
     body {
-      -webkit-app-region: no-drag;
-      user-select: none;
-      background: linear-gradient(135deg, #F5F1E8 0%, #FFE5E5 25%, #E0F5E9 50%, #E5F3FF 75%, #FFE5F1 100%);
       opacity: 0;
       animation: fadeIn 0.3s ease-in forwards;
-    }
-    
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
-    
-    .dark body {
-      background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
     }
     
     #appHeader {
       -webkit-app-region: drag;
     }
     
-    button, input, a, .no-drag {
-      -webkit-app-region: no-drag;
-    }
-    
-    .glass-card {
-      background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(40px) saturate(180%);
-      -webkit-backdrop-filter: blur(40px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-    }
-    
-    .dark .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    /* Custom select dropdown styling */
-    select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      background-size: 12px;
-      padding-right: 2.5rem;
-    }
-    
-    .dark select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23d1d5db' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    }
   </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
@@ -104,7 +61,7 @@
         </svg>
         <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">No recordings yet</h3>
         <p class="text-gray-600 dark:text-gray-300 mb-4">Start recording meetings to see them here</p>
-        <button id="startRecordingButton" class="px-6 py-3 bg-primary text-white rounded-xl hover:bg-red-600 transition-colors no-drag">
+        <button id="startRecordingButton" class="btn-primary px-6 py-3 rounded-xl no-drag">
           Start Recording
         </button>
       </div>

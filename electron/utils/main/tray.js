@@ -13,7 +13,7 @@ const Config = require('../../main/config');
  */
 function buildTrayMenu(isRecording, mainWindow, app, shell) {
   const config = Config.getAll();
-  
+
   return Menu.buildFromTemplate([
     {
       label: isRecording ? 'Stop Recording' : 'Start Recording',
@@ -27,7 +27,7 @@ function buildTrayMenu(isRecording, mainWindow, app, shell) {
             mainWindow.webContents.send('tray-start-recording');
           }
         }
-      }
+      },
     },
     { type: 'separator' },
     {
@@ -38,7 +38,7 @@ function buildTrayMenu(isRecording, mainWindow, app, shell) {
           mainWindow.focus();
           mainWindow.loadFile(getUIPath('history.html'));
         }
-      }
+      },
     },
     {
       label: 'Show Notes',
@@ -58,7 +58,7 @@ function buildTrayMenu(isRecording, mainWindow, app, shell) {
             }
           }
         }
-      }
+      },
     },
     { type: 'separator' },
     {
@@ -68,15 +68,15 @@ function buildTrayMenu(isRecording, mainWindow, app, shell) {
           mainWindow.show();
           mainWindow.focus();
         }
-      }
+      },
     },
     {
       label: 'Quit',
       click: () => {
         app.isQuitting = true;
         app.quit();
-      }
-    }
+      },
+    },
   ]);
 }
 
@@ -89,9 +89,9 @@ function buildTrayMenu(isRecording, mainWindow, app, shell) {
  */
 function updateTrayIcon(tray, recording, baseTrayIcon = null) {
   if (!tray) return baseTrayIcon;
-  
+
   let currentBaseIcon = baseTrayIcon;
-  
+
   if (recording) {
     // Show recording icon (red dot)
     if (!currentBaseIcon) {
@@ -108,7 +108,7 @@ function updateTrayIcon(tray, recording, baseTrayIcon = null) {
     tray.setImage(currentBaseIcon);
     tray.setToolTip('Aura - Meeting Recorder');
   }
-  
+
   return currentBaseIcon;
 }
 
@@ -122,9 +122,9 @@ function updateTrayIcon(tray, recording, baseTrayIcon = null) {
  */
 function updateTrayMenu(tray, isRecording, mainWindow, app, shell) {
   if (!tray) return;
-  
+
   const contextMenu = buildTrayMenu(isRecording, mainWindow, app, shell);
-  
+
   // When recording, don't set context menu to prevent it from showing on click
   // User can still right-click or use other methods to access menu if needed
   // When not recording, show the menu normally
@@ -143,7 +143,12 @@ function updateTrayMenu(tray, isRecording, mainWindow, app, shell) {
  * @param {BrowserWindow} mainWindow - Main window instance
  * @param {Function} updateMenuFn - Function to update the menu
  */
-function setupTrayClickHandlers(tray, getIsRecording, mainWindow, updateMenuFn) {
+function setupTrayClickHandlers(
+  tray,
+  getIsRecording,
+  mainWindow,
+  updateMenuFn
+) {
   tray.on('click', (event, bounds) => {
     const isRecording = getIsRecording();
     if (isRecording) {
@@ -155,7 +160,7 @@ function setupTrayClickHandlers(tray, getIsRecording, mainWindow, updateMenuFn) 
     }
     // When not recording, the context menu will show on click (macOS default behavior)
   });
-  
+
   // On macOS, also handle right-click for menu when not recording
   if (process.platform === 'darwin') {
     tray.on('right-click', () => {
@@ -171,6 +176,5 @@ module.exports = {
   updateTrayIcon,
   updateTrayMenu,
   buildTrayMenu,
-  setupTrayClickHandlers
+  setupTrayClickHandlers,
 };
-

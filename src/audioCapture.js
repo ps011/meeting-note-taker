@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 
 /**
  * Audio capture class for recording system audio and microphone
@@ -19,9 +18,6 @@ class AudioCapture {
    * Start recording - this will be handled by renderer process
    */
   async start() {
-    console.log('🎙️  Audio recording initiated...');
-    console.log(`   Will save to: ${this.outputPath}`);
-    
     // Create output directory if it doesn't exist
     const dir = path.dirname(this.outputPath);
     if (!fs.existsSync(dir)) {
@@ -29,7 +25,6 @@ class AudioCapture {
     }
 
     this.isRecording = true;
-    console.log('✅ Recording started (handled by renderer)');
   }
 
   /**
@@ -37,13 +32,10 @@ class AudioCapture {
    */
   async stop() {
     if (!this.isRecording) {
-      console.log('⚠️  No active recording to stop');
       return;
     }
 
-    console.log('⏹️  Stopping audio recording...');
     this.isRecording = false;
-    console.log('✅ Recording stopped');
   }
 
   /**
@@ -55,4 +47,3 @@ class AudioCapture {
 }
 
 module.exports = { AudioCapture };
-

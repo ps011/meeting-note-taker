@@ -11,8 +11,8 @@ const store = new Store({
     channels: 1,
     setupCompleted: false,
     dependenciesChecked: false,
-    dependenciesInstalled: false
-  }
+    dependenciesInstalled: false,
+  },
 });
 
 /**
@@ -39,7 +39,7 @@ class Config {
       channels: store.get('channels'),
       setupCompleted: store.get('setupCompleted'),
       dependenciesChecked: store.get('dependenciesChecked'),
-      dependenciesInstalled: store.get('dependenciesInstalled')
+      dependenciesInstalled: store.get('dependenciesInstalled'),
     };
   }
 
@@ -99,4 +99,3 @@ class Config {
 }
 
 module.exports = Config;
-

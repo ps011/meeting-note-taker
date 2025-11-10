@@ -39,7 +39,7 @@ const headerConfigs = {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
         </svg>
       </button>
-    `
+    `,
   },
   'history.html': {
     left: `
@@ -56,7 +56,7 @@ const headerConfigs = {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
       </button>
-    `
+    `,
   },
   'setup.html': {
     left: `
@@ -76,45 +76,46 @@ const headerConfigs = {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
         </svg>
       </button>
-    `
-  }
+    `,
+  },
 };
 
 function loadLayout() {
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
   const config = headerConfigs[currentPage];
-  
+
   if (!config) {
-    console.warn('No header config found for:', currentPage);
     return;
   }
 
   // Find or create header container
   let headerContainer = document.getElementById('appHeader');
-  
+
   if (!headerContainer) {
     // Create header if it doesn't exist
     headerContainer = document.createElement('header');
     headerContainer.id = 'appHeader';
-    headerContainer.className = 'flex items-center justify-between px-8 pt-12 pb-6 border-b border-gray-200 dark:border-gray-700';
-    
+    headerContainer.className =
+      'flex items-center justify-between px-8 pt-12 pb-6 border-b border-gray-200 dark:border-gray-700';
+
     // Insert at the beginning of body
     document.body.insertBefore(headerContainer, document.body.firstChild);
   }
 
   // Clear and rebuild header
   headerContainer.innerHTML = '';
-  
+
   const leftContainer = document.createElement('div');
   leftContainer.id = 'headerLeft';
-  leftContainer.className = 'flex items-center gap-3 text-gray-800 dark:text-white';
+  leftContainer.className =
+    'flex items-center gap-3 text-gray-800 dark:text-white';
   leftContainer.innerHTML = config.left;
-  
+
   const rightContainer = document.createElement('div');
   rightContainer.id = 'headerRight';
   rightContainer.className = 'flex items-center gap-3';
   rightContainer.innerHTML = config.right;
-  
+
   headerContainer.appendChild(leftContainer);
   headerContainer.appendChild(rightContainer);
 
@@ -150,6 +151,5 @@ if (document.readyState === 'loading') {
 window.Layout = {
   loadLayout,
   loadTheme: layoutThemeUtils.loadTheme,
-  toggleTheme: layoutThemeUtils.toggleTheme
+  toggleTheme: layoutThemeUtils.toggleTheme,
 };
-

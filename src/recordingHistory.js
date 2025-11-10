@@ -8,9 +8,17 @@ const os = require('os');
  */
 class RecordingHistory {
   constructor() {
-    this.historyFilePath = path.join(os.homedir(), '.meeting-note-taker', 'recordings.json');
-    this.recordingsDir = path.join(os.homedir(), '.meeting-note-taker', 'recordings');
-    
+    this.historyFilePath = path.join(
+      os.homedir(),
+      '.meeting-note-taker',
+      'recordings.json'
+    );
+    this.recordingsDir = path.join(
+      os.homedir(),
+      '.meeting-note-taker',
+      'recordings'
+    );
+
     this._ensureDirectories();
     this._loadHistory();
   }
@@ -23,7 +31,7 @@ class RecordingHistory {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     if (!fs.existsSync(this.recordingsDir)) {
       fs.mkdirSync(this.recordingsDir, { recursive: true });
     }
@@ -41,7 +49,6 @@ class RecordingHistory {
         this.recordings = [];
       }
     } catch (error) {
-      console.error('Failed to load recording history:', error);
       this.recordings = [];
     }
   }
@@ -51,10 +58,12 @@ class RecordingHistory {
    */
   _saveHistory() {
     try {
-      fs.writeFileSync(this.historyFilePath, JSON.stringify(this.recordings, null, 2), 'utf-8');
-    } catch (error) {
-      console.error('Failed to save recording history:', error);
-    }
+      fs.writeFileSync(
+        this.historyFilePath,
+        JSON.stringify(this.recordings, null, 2),
+        'utf-8'
+      );
+    } catch (error) {}
   }
 
   /**
@@ -76,12 +85,12 @@ class RecordingHistory {
    */
   saveRecordingFile(tempPath, recordingId) {
     const targetPath = this.getRecordingPath(recordingId);
-    
+
     if (fs.existsSync(tempPath)) {
       fs.renameSync(tempPath, targetPath);
       return targetPath;
     }
-    
+
     return null;
   }
 
@@ -90,7 +99,7 @@ class RecordingHistory {
    */
   addRecording({ title, audioPath, timestamp, templateId }) {
     const recordingId = this._generateId();
-    
+
     const recording = {
       id: recordingId,
       title: title || 'Untitled Meeting',
@@ -100,7 +109,7 @@ class RecordingHistory {
       transcriptPath: null,
       notePath: null,
       error: null,
-      templateId: templateId || 'general'
+      templateId: templateId || 'general',
     };
 
     this.recordings.push(recording);
@@ -113,14 +122,14 @@ class RecordingHistory {
    * Update recording status
    */
   updateRecording(recordingId, updates) {
-    const recording = this.recordings.find(r => r.id === recordingId);
-    
+    const recording = this.recordings.find((r) => r.id === recordingId);
+
     if (recording) {
       Object.assign(recording, updates);
       this._saveHistory();
       return true;
     }
-    
+
     return false;
   }
 
@@ -128,7 +137,7 @@ class RecordingHistory {
    * Get a recording by ID
    */
   getRecording(recordingId) {
-    return this.recordings.find(r => r.id === recordingId);
+    return this.recordings.find((r) => r.id === recordingId);
   }
 
   /**
@@ -142,15 +151,15 @@ class RecordingHistory {
    * Get recordings by status
    */
   getRecordingsByStatus(status) {
-    return this.recordings.filter(r => r.status === status);
+    return this.recordings.filter((r) => r.status === status);
   }
 
   /**
    * Delete a recording and its associated files
    */
   deleteRecording(recordingId) {
-    const index = this.recordings.findIndex(r => r.id === recordingId);
-    
+    const index = this.recordings.findIndex((r) => r.id === recordingId);
+
     if (index === -1) {
       return false;
     }
@@ -161,27 +170,21 @@ class RecordingHistory {
     if (recording.audioPath && fs.existsSync(recording.audioPath)) {
       try {
         fs.unlinkSync(recording.audioPath);
-      } catch (error) {
-        console.error('Failed to delete audio file:', error);
-      }
+      } catch (error) {}
     }
 
     // Delete transcript file if exists
     if (recording.transcriptPath && fs.existsSync(recording.transcriptPath)) {
       try {
         fs.unlinkSync(recording.transcriptPath);
-      } catch (error) {
-        console.error('Failed to delete transcript file:', error);
-      }
+      } catch (error) {}
     }
 
     // Delete note file if exists
     if (recording.notePath && fs.existsSync(recording.notePath)) {
       try {
         fs.unlinkSync(recording.notePath);
-      } catch (error) {
-        console.error('Failed to delete note file:', error);
-      }
+      } catch (error) {}
     }
 
     // Remove from history
@@ -196,14 +199,20 @@ class RecordingHistory {
    */
   getStats() {
     const total = this.recordings.length;
-    const completed = this.recordings.filter(r => r.status === 'completed').length;
-    const failed = this.recordings.filter(r => r.status === 'failed').length;
-    const processing = this.recordings.filter(r => r.status === 'processing').length;
-    const pending = this.recordings.filter(r => r.status === 'pending').length;
+    const completed = this.recordings.filter(
+      (r) => r.status === 'completed'
+    ).length;
+    const failed = this.recordings.filter((r) => r.status === 'failed').length;
+    const processing = this.recordings.filter(
+      (r) => r.status === 'processing'
+    ).length;
+    const pending = this.recordings.filter(
+      (r) => r.status === 'pending'
+    ).length;
 
     // Calculate total size
     let totalSize = 0;
-    this.recordings.forEach(recording => {
+    this.recordings.forEach((recording) => {
       if (recording.audioPath && fs.existsSync(recording.audioPath)) {
         try {
           const stats = fs.statSync(recording.audioPath);
@@ -220,11 +229,9 @@ class RecordingHistory {
       failed,
       processing,
       pending,
-      totalSize
+      totalSize,
     };
   }
 }
 
 module.exports = { RecordingHistory };
-
-

@@ -19,6 +19,5 @@ function toggleTheme() {
 
 module.exports = {
   loadTheme,
-  toggleTheme
+  toggleTheme,
 };
-
