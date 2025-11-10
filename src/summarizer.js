@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { getTemplate, buildPromptFromTemplate } = require('./templates.js');
 
 /**
  * Summarizer service using local Llama LLM
@@ -11,14 +12,19 @@ class LlamaSummarizer {
 
   /**
    * Summarize transcription using Llama
+   * @param {string} transcription - The meeting transcription
+   * @param {string} meetingTitle - Title of the meeting
+   * @param {string} templateId - Template ID to use for the prompt
    */
-  async summarize(transcription, meetingTitle = 'Meeting') {
+  async summarize(transcription, meetingTitle = 'Meeting', templateId = 'general') {
     try {
       console.log('🤖 Generating summary with Llama...');
       console.log(`   Model: ${this.model}`);
       console.log(`   API: ${this.apiUrl}`);
+      console.log(`   Template: ${templateId}`);
 
-      const prompt = this.buildPrompt(transcription, meetingTitle);
+      const template = getTemplate(templateId);
+      const prompt = buildPromptFromTemplate(template, transcription, meetingTitle);
 
       const response = await axios.post(
         this.apiUrl,
@@ -62,27 +68,6 @@ class LlamaSummarizer {
       }
       throw error;
     }
-  }
-
-  /**
-   * Build the prompt for Llama
-   */
-  buildPrompt(transcription, meetingTitle) {
-    return `You are an expert meeting note-taker. Analyze the following meeting transcription and create a comprehensive summary in markdown format.
-
-Meeting Title: ${meetingTitle}
-
-Transcription:
-${transcription}
-
-Please create a well-structured summary with the following sections:
-1. **Meeting Overview** - Brief description of the meeting
-2. **Key Discussion Points** - Main topics discussed
-3. **Decisions Made** - Any decisions or agreements reached
-4. **Action Items** - Tasks assigned with responsible parties (if mentioned)
-5. **Next Steps** - Follow-up actions or future meetings
-
-Format your response in clean markdown. Be concise but thorough.`;
   }
 }
 

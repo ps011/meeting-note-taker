@@ -30,7 +30,7 @@ function getElement(id) {
 }
 
 // Store references to elements (will be updated when DOM is ready)
-let recordButton, stopButton, stopButtonContent, meetingTitleInput, statusDot, statusText;
+let recordButton, stopButton, stopButtonContent, meetingTitleInput, meetingTemplateSelect, statusDot, statusText;
 let timer, timerDisplay, statusMessage, recordingVisual, vaultPath, modelName;
 let actionLabel, permissionBanner, openPermissionsButton, checkPermissionButton;
 let participantInput, participantTags, themeToggle, stopButtonInner;
@@ -41,6 +41,7 @@ function refreshDOMElements() {
   stopButton = getElement('stopButton');
   stopButtonContent = getElement('stopButtonContent');
   meetingTitleInput = getElement('meetingTitle');
+  meetingTemplateSelect = getElement('meetingTemplate');
   statusDot = getElement('statusDot');
   statusText = getElement('statusText');
   timer = getElement('timer');
@@ -370,16 +371,18 @@ async function startRecording() {
     }
     
     const title = meetingTitleInput.value.trim() || 'Meeting';
+    const templateId = meetingTemplateSelect ? meetingTemplateSelect.value : 'general';
     
     setStatus('recording', 'Recording');
     recordButton.classList.add('hidden');
     stopButton.classList.remove('hidden');
     stopButton.classList.add('flex');
     meetingTitleInput.disabled = true;
+    if (meetingTemplateSelect) meetingTemplateSelect.disabled = true;
     
     await startMicrophoneRecording();
     updateAudioBars();
-    await noteTaker.startMeeting(title);
+    await noteTaker.startMeeting(title, templateId);
     
     isRecording = true;
     startTime = Date.now();
@@ -853,6 +856,7 @@ function resetUI() {
   statusMessage.style.color = '';
   statusMessage.textContent = '';
   meetingTitleInput.disabled = false;
+  if (meetingTemplateSelect) meetingTemplateSelect.disabled = false;
   
   // Reset stop button content to square
   if (stopButtonContent) {

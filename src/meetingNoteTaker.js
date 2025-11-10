@@ -26,12 +26,14 @@ class MeetingNoteTaker {
   /**
    * Start recording a meeting
    * @param {string} meetingTitle - Optional title for the meeting
+   * @param {string} templateId - Optional template ID for note generation
    */
-  async startMeeting(meetingTitle = 'Meeting') {
+  async startMeeting(meetingTitle = 'Meeting', templateId = 'general') {
     try {
       console.log('\n🚀 Starting Meeting Note Taker\n');
       
       this.currentMeetingTitle = meetingTitle;
+      this.currentTemplateId = templateId || 'general';
       
       // Create temp directory for audio files
       const tempDir = path.join(os.tmpdir(), 'meeting-note-taker');
@@ -47,7 +49,8 @@ class MeetingNoteTaker {
       this.currentRecording = this.recordingHistory.addRecording({
         title: meetingTitle,
         audioPath: this.currentAudioPath,
-        timestamp: timestamp
+        timestamp: timestamp,
+        templateId: templateId || 'general'
       });
 
       console.log(`📝 Recording ID: ${this.currentRecording.id}`);
@@ -133,7 +136,7 @@ class MeetingNoteTaker {
 
       // Step 2: Summarize
       console.log('Step 2/3: Generating summary with Llama...');
-      const summary = await this.summarizer.summarize(transcription, this.currentMeetingTitle);
+      const summary = await this.summarizer.summarize(transcription, this.currentMeetingTitle, this.currentTemplateId);
       
       if (callbacks.onSummarizationComplete) {
         callbacks.onSummarizationComplete();
@@ -144,7 +147,9 @@ class MeetingNoteTaker {
       const notePath = this.noteWriter.saveNote(
         summary,
         transcription,
-        this.currentMeetingTitle
+        this.currentMeetingTitle,
+        this.currentTemplateId,
+        [] // Participants can be added later if needed
       );
 
       // Update recording with successful results
@@ -187,8 +192,9 @@ class MeetingNoteTaker {
   /**
    * Retry transcription for a failed recording
    * @param {string} recordingId - The ID of the recording to retry
+   * @param {Object} callbacks - Progress callbacks for UI updates
    */
-  async retryTranscription(recordingId) {
+  async retryTranscription(recordingId, callbacks = {}) {
     try {
       const recording = this.recordingHistory.getRecording(recordingId);
       
@@ -208,21 +214,48 @@ class MeetingNoteTaker {
         error: null 
       });
 
-      // Transcribe
+      // Send initial progress update
+      if (callbacks.onProgress) {
+        console.log('Calling onProgress: Preparing to retry...');
+        callbacks.onProgress({ step: 0, total: 3, message: 'Preparing to retry...' });
+      }
+
+      // Step 1: Transcribe
+      if (callbacks.onProgress) {
+        console.log('Calling onProgress: Transcribing audio...');
+        callbacks.onProgress({ step: 1, total: 3, message: 'Transcribing audio...' });
+      }
       const transcription = await this.transcriptionService.transcribe(recording.audioPath);
       
       if (!transcription || transcription.length < 10) {
         throw new Error('Transcription failed or produced no content');
       }
 
-      // Summarize
-      const summary = await this.summarizer.summarize(transcription, recording.title);
+      if (callbacks.onTranscriptionComplete) {
+        callbacks.onTranscriptionComplete();
+      }
 
-      // Save notes
+      // Step 2: Summarize
+      if (callbacks.onProgress) {
+        callbacks.onProgress({ step: 2, total: 3, message: 'Generating summary...' });
+      }
+      const templateId = recording.templateId || 'general';
+      const summary = await this.summarizer.summarize(transcription, recording.title, templateId);
+
+      if (callbacks.onSummarizationComplete) {
+        callbacks.onSummarizationComplete();
+      }
+
+      // Step 3: Save notes
+      if (callbacks.onProgress) {
+        callbacks.onProgress({ step: 3, total: 3, message: 'Saving notes...' });
+      }
       const notePath = this.noteWriter.saveNote(
         summary,
         transcription,
-        recording.title
+        recording.title,
+        templateId,
+        [] // Participants can be added later if needed
       );
 
       // Update recording with successful results
@@ -231,6 +264,10 @@ class MeetingNoteTaker {
         notePath: notePath,
         error: null
       });
+
+      if (callbacks.onProgress) {
+        callbacks.onProgress({ step: 3, total: 3, message: 'Completed!', completed: true });
+      }
 
       console.log('\n✅ Retry completed successfully!\n');
 
@@ -248,6 +285,10 @@ class MeetingNoteTaker {
         status: 'failed',
         error: error.message
       });
+
+      if (callbacks.onProgress) {
+        callbacks.onProgress({ step: 0, total: 3, message: 'Failed: ' + error.message, error: true });
+      }
       
       throw error;
     }
@@ -309,6 +350,64 @@ class MeetingNoteTaker {
    */
   isRecording() {
     return this.audioCapture && this.audioCapture.getIsRecording();
+  }
+
+  /**
+   * Convert an existing note to a different template
+   * @param {string} notePath - Path to the existing note file
+   * @param {string} newTemplateId - Template ID to convert to
+   * @param {Object} callbacks - Progress callbacks
+   */
+  async convertNote(notePath, newTemplateId, callbacks = {}) {
+    try {
+      console.log(`\n🔄 Converting note to template: ${newTemplateId}\n`);
+
+      // Parse the existing note
+      if (callbacks.onProgress) {
+        callbacks.onProgress({ step: 1, total: 3, message: 'Parsing existing note...' });
+      }
+      
+      const parsed = this.noteWriter.parseNote(notePath);
+      
+      if (!parsed.transcription || parsed.transcription.length < 10) {
+        throw new Error('No transcription found in note file. Cannot convert.');
+      }
+
+      console.log(`📄 Found transcription (${parsed.transcription.length} characters)`);
+      console.log(`📋 Current template: ${parsed.templateId}`);
+      console.log(`📋 New template: ${newTemplateId}`);
+
+      // Generate new summary with the new template
+      if (callbacks.onProgress) {
+        callbacks.onProgress({ step: 2, total: 3, message: 'Generating new summary...' });
+      }
+      
+      const newSummary = await this.summarizer.summarize(
+        parsed.transcription,
+        parsed.title,
+        newTemplateId
+      );
+
+      if (callbacks.onProgress) {
+        callbacks.onProgress({ step: 3, total: 3, message: 'Updating note file...' });
+      }
+
+      // Update the note file
+      const updatedPath = this.noteWriter.updateNote(notePath, newSummary, newTemplateId);
+
+      console.log('\n✅ Note converted successfully!\n');
+      console.log(`📁 Updated file: ${updatedPath}\n`);
+
+      return {
+        success: true,
+        notePath: updatedPath,
+        newTemplateId,
+        summary: newSummary
+      };
+    } catch (error) {
+      console.error('\n❌ Failed to convert note:', error.message);
+      throw error;
+    }
   }
 }
 

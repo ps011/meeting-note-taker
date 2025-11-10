@@ -434,7 +434,48 @@ ipcMain.handle('retry-transcription', async (event, recordingId) => {
     }
     
     const noteTaker = new MeetingNoteTaker(config);
-    const result = await noteTaker.retryTranscription(recordingId);
+    
+    // Send initial progress update immediately (before any async operations)
+    try {
+      event.sender.send('retry-progress', { 
+        recordingId, 
+        step: 0, 
+        total: 3, 
+        message: 'Starting retry...' 
+      });
+      console.log('Sent initial retry progress for:', recordingId);
+    } catch (error) {
+      console.error('Error sending initial progress:', error);
+    }
+    
+    const result = await noteTaker.retryTranscription(recordingId, {
+      onProgress: (progress) => {
+        console.log('Sending retry progress:', progress);
+        try {
+          event.sender.send('retry-progress', { recordingId, ...progress });
+        } catch (error) {
+          console.error('Error sending retry progress:', error);
+        }
+      },
+      onTranscriptionComplete: () => {
+        event.sender.send('retry-progress', { 
+          recordingId, 
+          step: 1, 
+          total: 3, 
+          message: 'Transcription complete',
+          transcriptionComplete: true 
+        });
+      },
+      onSummarizationComplete: () => {
+        event.sender.send('retry-progress', { 
+          recordingId, 
+          step: 2, 
+          total: 3, 
+          message: 'Summary complete',
+          summarizationComplete: true 
+        });
+      }
+    });
     
     return { success: true, ...result };
   } catch (error) {
@@ -477,6 +518,58 @@ ipcMain.handle('update-recording', async (event, recordingId, updates) => {
     return { success: success };
   } catch (error) {
     console.error('Error updating recording:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('convert-note', async (event, notePath, newTemplateId) => {
+  try {
+    const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
+    const config = Config.getAll();
+    
+    if (!config || !config.notesPath) {
+      return { success: false, error: 'Not configured' };
+    }
+    
+    const noteTaker = new MeetingNoteTaker(config);
+    
+    // Send initial progress update
+    try {
+      event.sender.send('convert-progress', { 
+        notePath,
+        step: 0, 
+        total: 3, 
+        message: 'Starting conversion...' 
+      });
+    } catch (error) {
+      console.error('Error sending initial progress:', error);
+    }
+    
+    const result = await noteTaker.convertNote(notePath, newTemplateId, {
+      onProgress: (progress) => {
+        console.log('Sending convert progress:', progress);
+        try {
+          event.sender.send('convert-progress', { notePath, ...progress });
+        } catch (error) {
+          console.error('Error sending convert progress:', error);
+        }
+      }
+    });
+    
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Error converting note:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-all-templates', async () => {
+  try {
+    const { getAllTemplates } = require('../../src/templates.js');
+    const templates = getAllTemplates();
+    return { success: true, templates };
+  } catch (error) {
+    console.error('Error getting templates:', error);
     return { success: false, error: error.message };
   }
 });

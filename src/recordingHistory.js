@@ -88,7 +88,7 @@ class RecordingHistory {
   /**
    * Add a new recording to history
    */
-  addRecording({ title, audioPath, timestamp }) {
+  addRecording({ title, audioPath, timestamp, templateId }) {
     const recordingId = this._generateId();
     
     const recording = {
@@ -99,7 +99,8 @@ class RecordingHistory {
       audioPath: audioPath,
       transcriptPath: null,
       notePath: null,
-      error: null
+      error: null,
+      templateId: templateId || 'general'
     };
 
     this.recordings.push(recording);
