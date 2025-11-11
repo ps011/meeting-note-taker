@@ -226,6 +226,11 @@ ipcMain.on('save-config', (event, config) => {
   }
 });
 
+ipcMain.handle('reset-config', async () => {
+  Config.reset();
+  return { success: true };
+});
+
 ipcMain.on('setup-skip', () => {
   // User skipped setup, still create main window but with warnings
   Config.save({ setupCompleted: false });

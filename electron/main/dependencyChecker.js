@@ -3,8 +3,62 @@ const { promisify } = require('util');
 const os = require('os');
 const path = require('path');
 const Config = require('./config');
+const { log } = require('console');
 
 const execAsync = promisify(exec);
+
+// Static dependencies list - shared across all instances
+const DEPENDENCIES = [
+  {
+    name: 'Homebrew',
+    whichCommand: 'brew',
+    installCommand:
+      '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
+    required: true,
+    description: 'Package manager for macOS',
+    verifyCommand: '--version',
+  },
+  {
+    name: 'Python3',
+    whichCommand: 'python3',
+    installCommand: 'brew install python3',
+    required: true,
+    description: 'Python 3 runtime (required for Whisper)',
+    verifyCommand: '--version',
+  },
+  {
+    name: 'FFmpeg',
+    whichCommand: 'ffmpeg',
+    installCommand: 'brew install ffmpeg',
+    required: true,
+    description: 'Audio/video processing tool',
+    verifyCommand: '-version',
+  },
+  {
+    name: 'Sox',
+    whichCommand: 'sox',
+    installCommand: 'brew install sox',
+    required: true,
+    description: 'Sound processing tool',
+    verifyCommand: '--version',
+  },
+  {
+    name: 'Ollama',
+    whichCommand: 'ollama',
+    installCommand: 'brew install ollama',
+    required: true,
+    description: 'Local LLM runtime',
+    verifyCommand: '--version',
+  },
+  {
+    name: 'Whisper',
+    whichCommand: 'whisper',
+    installCommand: 'pip3 install -U openai-whisper',
+    required: true,
+    description: 'Speech-to-text transcription',
+    verifyCommand: '-h',
+  },
+];
 
 /**
  * Dependency checker and installer
@@ -12,141 +66,117 @@ const execAsync = promisify(exec);
 class DependencyChecker {
   constructor() {
     this.platform = os.platform();
-    this.dependencies = [
-      {
-        name: 'Homebrew',
-        whichCommand: 'brew',
-        installCommand:
-          '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
-        required: true,
-        description: 'Package manager for macOS',
-        verifyCommand: '--version',
-      },
-      {
-        name: 'Python3',
-        whichCommand: 'python3',
-        installCommand: 'brew install python3',
-        required: true,
-        description: 'Python 3 runtime (required for Whisper)',
-        verifyCommand: '--version',
-      },
-      {
-        name: 'FFmpeg',
-        whichCommand: 'ffmpeg',
-        installCommand: 'brew install ffmpeg',
-        required: true,
-        description: 'Audio/video processing tool',
-        verifyCommand: '-version',
-      },
-      {
-        name: 'Sox',
-        whichCommand: 'sox',
-        installCommand: 'brew install sox',
-        required: true,
-        description: 'Sound processing tool',
-        verifyCommand: '--version',
-      },
-      {
-        name: 'Ollama',
-        whichCommand: 'ollama',
-        installCommand: 'brew install ollama',
-        required: true,
-        description: 'Local LLM runtime',
-        verifyCommand: '--version',
-      },
-      {
-        name: 'Whisper',
-        whichCommand: 'whisper',
-        installCommand: 'pip3 install -U openai-whisper',
-        required: true,
-        description: 'Speech-to-text transcription',
-        verifyCommand: "-h | grep 'usage'",
-      },
-    ];
+    this._cachedPath = null;
   }
 
   /**
-   * Check if running on macOS
+   * Get the dependencies list (static, shared across all instances)
    */
+  static get dependencies() {
+    return DEPENDENCIES;
+  }
+
   isMacOS() {
     return this.platform === 'darwin';
   }
 
-  /**
-   * Get stored path for a dependency
-   */
   getStoredPath(dependencyName) {
     const paths = Config.get('dependencyPaths') || {};
     return paths[dependencyName] || null;
   }
 
-  /**
-   * Store path for a dependency
-   */
   storePath(dependencyName, path) {
     const paths = Config.get('dependencyPaths') || {};
     paths[dependencyName] = path;
+    console.log('storing path', dependencyName, path);
     Config.set('dependencyPaths', paths);
+    console.log('clearing cache');
+    this.clearPathCache();
+    console.log('cache cleared');
   }
 
-  /**
-   * Find path of a dependency using which command
-   */
   async findDependencyPath(whichCommand) {
     if (!whichCommand) {
       return null;
     }
 
-    const result = await this.executeCommand(`which ${whichCommand}`, 5000);
-    if (result.success && result.stdout.trim()) {
+    // Use executeCommand with allowDiscovery=true to use system PATH
+    // This allows finding commands in common installation locations
+    const result = await this.executeCommand(
+      `/usr/bin/which ${whichCommand}`,
+      5000,
+      true // allowDiscovery = true
+    );
+
+    if (result.success && result.stdout && result.stdout.trim()) {
       return result.stdout.trim();
     }
+
     return null;
   }
 
+  buildPathFromStoredPaths() {
+    // Return cached path if available
+    if (this._cachedPath !== null) {
+      return this._cachedPath;
+    }
+
+    const dependencyPaths = Config.get('dependencyPaths') || {};
+    const pathDirs = new Set();
+
+    Object.values(dependencyPaths).forEach((depPath) => {
+      if (depPath && path.isAbsolute(depPath)) {
+        const dir = path.dirname(depPath);
+        pathDirs.add(dir);
+      }
+    });
+
+    // Convert to array and join
+    const storedPath = Array.from(pathDirs).join(':');
+
+    // If no stored paths exist, throw error to redirect to settings
+    if (!storedPath) {
+      throw new Error(
+        'Dependencies not configured. Please go to Settings and check dependencies to update configuration.'
+      );
+    }
+
+    // Cache the path
+    this._cachedPath = storedPath;
+    return storedPath;
+  }
+
   /**
-   * Execute command and check if successful
+   * Clear cached PATH (call this when dependency paths are updated)
    */
+  clearPathCache() {
+    this._cachedPath = null;
+  }
+
   async executeCommand(command, timeout = 30000) {
     try {
-      const homeDir = process.env.HOME || os.homedir();
-      let pathToAdd = '';
-
-      // If command uses an absolute path (stored path), add its directory to PATH
-      // This handles subprocess calls from the command
-      const pathMatch = command.match(/^["']?(\/[^"'\s]+)/);
-      if (pathMatch) {
-        const absPath = pathMatch[1];
-        const pathDir = path.dirname(absPath);
-        pathToAdd = `${pathDir}:`;
-      }
-
-      // For 'which' commands or commands without absolute paths, include common locations
-      if (command.startsWith('which ') || !pathToAdd) {
-        const commonPaths = '/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin';
-        const userLocalBin = `${homeDir}/.local/bin`;
-        pathToAdd = `${commonPaths}:${userLocalBin}:`;
-      }
-
-      const env = {
-        ...process.env,
-        PATH: `${pathToAdd}${process.env.PATH || ''}`,
-      };
-
       const { stdout, stderr } = await execAsync(command, {
         timeout,
-        env: env,
         shell: true,
       });
       return { success: true, stdout, stderr };
     } catch (error) {
+      console.log('error', error);
+      if (
+        error.message &&
+        error.message.includes('Dependencies not configured')
+      ) {
+        return {
+          success: false,
+          error: error.message,
+          code: 'DEPENDENCIES_NOT_CONFIGURED',
+          requiresSettingsRedirect: true,
+        };
+      }
       return { success: false, error: error.message, code: error.code };
     }
   }
 
-  /**
-   * Get command path for a dependency (uses stored path if available)
-   */
   getCommandPath(dependencyName) {
     const storedPath = this.getStoredPath(dependencyName);
     if (storedPath) {
@@ -154,16 +184,17 @@ class DependencyChecker {
     }
 
     // Fallback to dependency name if no stored path
-    const dep = this.dependencies.find((d) => d.name === dependencyName);
+    const dep = DependencyChecker.dependencies.find(
+      (d) => d.name === dependencyName
+    );
     return dep?.whichCommand || dependencyName.toLowerCase();
   }
 
-  /**
-   * Check if a single dependency is installed
-   */
   async checkDependency(dependency) {
     let installed = false;
     let path = null;
+    let justDiscovered = false;
+
     // Check if we already have a stored path
     path = this.getStoredPath(dependency.name);
 
@@ -195,9 +226,6 @@ class DependencyChecker {
     };
   }
 
-  /**
-   * Check all dependencies
-   */
   async checkAll(progressCallback) {
     if (!this.isMacOS()) {
       return {
@@ -207,10 +235,10 @@ class DependencyChecker {
     }
 
     const results = [];
-    const total = this.dependencies.length;
+    const total = DependencyChecker.dependencies.length;
 
-    for (let i = 0; i < this.dependencies.length; i++) {
-      const dep = this.dependencies[i];
+    for (let i = 0; i < DependencyChecker.dependencies.length; i++) {
+      const dep = DependencyChecker.dependencies[i];
 
       if (progressCallback) {
         progressCallback({
@@ -239,9 +267,6 @@ class DependencyChecker {
     };
   }
 
-  /**
-   * Install a single dependency
-   */
   async installDependency(dependency, progressCallback) {
     try {
       if (progressCallback) {
@@ -319,9 +344,6 @@ class DependencyChecker {
     }
   }
 
-  /**
-   * Install all missing dependencies
-   */
   async installMissing(missingDeps, progressCallback) {
     const results = [];
     const total = missingDeps.length;
@@ -341,7 +363,9 @@ class DependencyChecker {
       }
 
       // Find the full dependency object
-      const fullDep = this.dependencies.find((d) => d.name === dep.name);
+      const fullDep = DependencyChecker.dependencies.find(
+        (d) => d.name === dep.name
+      );
 
       const result = await this.installDependency(fullDep, progressCallback);
       results.push({
@@ -367,9 +391,6 @@ class DependencyChecker {
     };
   }
 
-  /**
-   * Check if Ollama is running
-   */
   async checkOllamaRunning() {
     try {
       const axios = require('axios');
@@ -377,14 +398,11 @@ class DependencyChecker {
         timeout: 3000,
       });
       return { running: true, models: response.data.models || [] };
-    } catch (error) {
+    } catch {
       return { running: false };
     }
   }
 
-  /**
-   * Start Ollama service
-   */
   async startOllama(progressCallback) {
     try {
       if (progressCallback) {
@@ -426,9 +444,6 @@ class DependencyChecker {
     }
   }
 
-  /**
-   * Pull a specific Ollama model
-   */
   async pullOllamaModel(modelName, progressCallback) {
     try {
       if (progressCallback) {
@@ -471,9 +486,6 @@ class DependencyChecker {
     }
   }
 
-  /**
-   * Run full setup - check and install all dependencies
-   */
   async runFullSetup(options = {}) {
     const progressCallback = options.progressCallback;
     const modelName = options.modelName || 'llama3';

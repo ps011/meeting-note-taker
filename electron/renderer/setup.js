@@ -29,6 +29,7 @@ const progressPercent = document.getElementById('progressPercent');
 const llamaModelInput = document.getElementById('llamaModel');
 const whisperModelSelect = document.getElementById('whisperModel');
 const llamaApiUrlInput = document.getElementById('llamaApiUrl');
+const resetConfigButton = document.getElementById('resetConfigButton');
 
 let selectedPath = '';
 let dependenciesChecked = false;
@@ -346,6 +347,32 @@ ipcRenderer.invoke('get-config').then((config) => {
       'Update your configuration';
   }
 });
+
+// Reset configuration button handler
+if (resetConfigButton) {
+  resetConfigButton.addEventListener('click', async () => {
+    const confirmed = confirm(
+      'Are you sure you want to reset all settings?\n\n' +
+        'This will clear:\n' +
+        '• Notes folder path\n' +
+        '• Dependency paths\n' +
+        '• All preferences\n' +
+        '• Setup completion status\n\n' +
+        'You will need to set up the app again.'
+    );
+
+    if (confirmed) {
+      try {
+        await ipcRenderer.invoke('reset-config');
+        alert('Configuration has been reset. The page will reload.');
+        // Reload the page to show default values
+        window.location.reload();
+      } catch (error) {
+        alert('Failed to reset configuration: ' + error.message);
+      }
+    }
+  });
+}
 
 browseButton.addEventListener('click', async () => {
   const result = await ipcRenderer.invoke('select-folder');

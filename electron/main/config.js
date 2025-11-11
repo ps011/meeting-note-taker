@@ -1,4 +1,5 @@
 const Store = require('electron-store');
+const { app } = require('electron');
 
 // Initialize persistent storage
 const store = new Store({
@@ -40,6 +41,7 @@ class Config {
       setupCompleted: store.get('setupCompleted'),
       dependenciesChecked: store.get('dependenciesChecked'),
       dependenciesInstalled: store.get('dependenciesInstalled'),
+      isDev: !app.isPackaged,
     };
   }
 

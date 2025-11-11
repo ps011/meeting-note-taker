@@ -6,10 +6,8 @@ const path = require('path');
 
 const execAsync = promisify(exec);
 
-// Try to load Config if available (for Electron main process)
 let Config = null;
 try {
-  // Config is in electron/main/config.js relative to src
   const configPath = path.join(
     __dirname,
     '..',
@@ -60,52 +58,25 @@ class TranscriptionService {
    * Transcribe audio file using Whisper
    */
   async transcribe(audioPath) {
-    try {
-      if (!fs.existsSync(audioPath)) {
-        throw new Error(`Audio file not found: ${audioPath}`);
-      }
-
-      // Get Whisper path and use it directly
-      const whisperPath = await this.getWhisperPath();
-
-      const command = `"${whisperPath}" "${audioPath}" --model ${this.model} --output_format txt --language en --output_dir "${audioPath.substring(0, audioPath.lastIndexOf('/'))}"`;
-
-      // Ensure PATH includes the directory containing whisper for any subprocess calls
-      // If whisperPath is absolute, use its directory; otherwise use common paths
-      let whisperDir = '';
-      if (path.isAbsolute(whisperPath)) {
-        whisperDir = `${path.dirname(whisperPath)}:`;
-      } else {
-        // Fallback: include common binary locations
-        const homeDir = process.env.HOME || os.homedir();
-        whisperDir = `/usr/local/bin:/opt/homebrew/bin:${homeDir}/.local/bin:`;
-      }
-
-      const env = {
-        ...process.env,
-        PATH: `${whisperDir}${process.env.PATH || '/usr/bin:/bin'}`,
-      };
-
-      const { stdout, stderr } = await execAsync(command, {
-        env: env,
-        shell: true,
-      });
-
-      if (stderr && !stderr.includes('WARNING')) {
-      }
-
-      const txtPath = audioPath.replace(/\.[^/.]+$/, '.txt');
-
-      if (!fs.existsSync(txtPath)) {
-        throw new Error('Transcription file was not generated');
-      }
-
-      const transcription = fs.readFileSync(txtPath, 'utf-8');
-
-      return transcription.trim();
-    } catch (error) {
-      throw error;
+    if (!fs.existsSync(audioPath)) {
+      throw new Error(`Audio file not found: ${audioPath}`);
     }
+
+    const command = `"whisper" "${audioPath}" --model ${this.model} --output_format txt --language en --output_dir "${audioPath.substring(0, audioPath.lastIndexOf('/'))}"`;
+
+    await execAsync(command, {
+      shell: true,
+    });
+
+    const txtPath = audioPath.replace(/\.[^/.]+$/, '.txt');
+
+    if (!fs.existsSync(txtPath)) {
+      throw new Error('Transcription file was not generated');
+    }
+
+    const transcription = fs.readFileSync(txtPath, 'utf-8');
+
+    return transcription.trim();
   }
 }
 

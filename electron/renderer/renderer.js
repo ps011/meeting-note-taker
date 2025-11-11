@@ -4,15 +4,13 @@ const fs = require('fs');
 const os = require('os');
 
 const { MeetingNoteTaker } = require('../../src/meetingNoteTaker.js');
-const { trackEvent, trackPageView } = require('../utils/renderer/analytics');
+const { trackPageView } = require('../utils/renderer/analytics');
 // Use unique names to avoid conflicts with other renderer scripts
 const rendererThemeUtils = require('../utils/renderer/theme');
-const { showNotification } = require('../utils/renderer/notifications');
 const {
   openNotesFolder,
   openRecordingsPage,
   openSettingsPage,
-  openMainPage,
 } = require('../utils/renderer/navigation');
 
 let noteTaker = null;
@@ -81,7 +79,7 @@ async function checkPermissions() {
       permissionBanner.classList.add('hidden');
     } else {
       permissionBanner.classList.remove('hidden');
-      const isDev = process.env.NODE_ENV !== 'production';
+      const isDev = config?.isDev || false;
       let message = 'Screen Recording Permission Required\n\n';
 
       if (isDev) {
@@ -151,10 +149,8 @@ async function init() {
           body: 'Please configure notes folder in Settings first. Open the app to configure.',
           silent: false,
         });
-      } else {
       }
     } else if (isRecording) {
-      // Already recording
       if (Notification.permission === 'granted') {
         new Notification('Aura - Meeting Recorder', {
           body: 'Recording is already in progress',
@@ -382,7 +378,10 @@ function setupButtonListeners() {
       meetingTitleInput.dataset.listenerAttached = 'true';
     }
 
-    if (meetingTemplateSelect && !meetingTemplateSelect.dataset.listenerAttached) {
+    if (
+      meetingTemplateSelect &&
+      !meetingTemplateSelect.dataset.listenerAttached
+    ) {
       meetingTemplateSelect.addEventListener('change', () => {
         if (isRecording && noteTaker) {
           const newTemplateId = meetingTemplateSelect.value || 'general';
@@ -700,7 +699,7 @@ async function stopRecording() {
     const finalTemplateId = meetingTemplateSelect
       ? meetingTemplateSelect.value
       : 'general';
-    
+
     // Update noteTaker with final values
     if (noteTaker) {
       noteTaker.updateMeetingTitle(finalTitle);
@@ -830,7 +829,9 @@ function startTimer() {
     const elapsed = Date.now() - startTime;
     const minutes = Math.floor(elapsed / 60000);
     const seconds = Math.floor((elapsed % 60000) / 1000);
-    timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    if (timerDisplay) {
+      timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
   }, 1000);
 }
 
@@ -891,21 +892,23 @@ function updateProgress(step, state, message) {
 
       // After fade out, change text and fade in
       setTimeout(() => {
-        statusMessage.textContent = message;
-        statusMessage.classList.remove('fade-out');
-        statusMessage.classList.add('fade-in');
+        if (statusMessage) {
+          statusMessage.textContent = message;
+          statusMessage.classList.remove('fade-out');
+          statusMessage.classList.add('fade-in');
 
-        // Add special animations and colors for success/error
-        if (message.includes('✓') || state === 'completed') {
-          statusMessage.style.color = '#10b981'; // green (same in both modes)
-          statusMessage.classList.add('success-pulse');
-        } else if (message.includes('❌') || state === 'error') {
-          statusMessage.style.color = '#ef4444'; // red (same in both modes)
-          statusMessage.classList.add('error-shake');
-        } else {
-          // Check if dark mode is active
-          const isDark = document.documentElement.classList.contains('dark');
-          statusMessage.style.color = isDark ? '#d1d5db' : '#374151'; // gray-300 in dark, gray-700 in light
+          // Add special animations and colors for success/error
+          if (message.includes('✓') || state === 'completed') {
+            statusMessage.style.color = '#10b981'; // green (same in both modes)
+            statusMessage.classList.add('success-pulse');
+          } else if (message.includes('❌') || state === 'error') {
+            statusMessage.style.color = '#ef4444'; // red (same in both modes)
+            statusMessage.classList.add('error-shake');
+          } else {
+            // Check if dark mode is active
+            const isDark = document.documentElement.classList.contains('dark');
+            statusMessage.style.color = isDark ? '#d1d5db' : '#374151'; // gray-300 in dark, gray-700 in light
+          }
         }
       }, 300); // Match fade-out duration
     }
@@ -921,28 +924,40 @@ function resetUI() {
     ipcRenderer.send('recording-stopped');
   }
   stopAudioVisualization();
-  recordButton.classList.remove('hidden');
-  stopButton.classList.add('hidden');
-  stopButton.classList.remove('flex');
+  if (recordButton) {
+    recordButton.classList.remove('hidden');
+  }
+  if (stopButton) {
+    stopButton.classList.add('hidden');
+    stopButton.classList.remove('flex');
+  }
 
   if (stopButtonInner) {
     stopButtonInner.classList.add('recording-pulse');
     stopButtonInner.disabled = false;
   }
 
-  timerDisplay.textContent = '00:00';
-  timerDisplay.classList.remove('hidden');
-  statusMessage.classList.add('hidden');
-  statusMessage.classList.remove(
-    'fade-in',
-    'fade-out',
-    'success-pulse',
-    'error-shake'
-  );
-  statusMessage.style.color = '';
-  statusMessage.textContent = '';
-  meetingTitleInput.disabled = false;
-  if (meetingTemplateSelect) meetingTemplateSelect.disabled = false;
+  if (timerDisplay) {
+    timerDisplay.textContent = '00:00';
+    timerDisplay.classList.remove('hidden');
+  }
+  if (statusMessage) {
+    statusMessage.classList.add('hidden');
+    statusMessage.classList.remove(
+      'fade-in',
+      'fade-out',
+      'success-pulse',
+      'error-shake'
+    );
+    statusMessage.style.color = '';
+    statusMessage.textContent = '';
+  }
+  if (meetingTitleInput) {
+    meetingTitleInput.disabled = false;
+  }
+  if (meetingTemplateSelect) {
+    meetingTemplateSelect.disabled = false;
+  }
 
   // Reset stop button content to square
   if (stopButtonContent) {
