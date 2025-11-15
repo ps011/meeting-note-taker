@@ -1,6 +1,6 @@
 {
   "name": "aura-meeting-recorder",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Capture your voice - effortlessly transcribe and summarize meetings, notes, and ideas",
   "main": "electron/main/main.js",
   "type": "commonjs",
