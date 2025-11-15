@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Determine version bump type
+        id: version_bump
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.version_bump }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Bump version
+        id: bump_version
+        run: |
+          VERSION_TYPE=${{ steps.version_bump.outputs.type }}
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Bump version using npm version (doesn't commit or tag)
+          npm version $VERSION_TYPE --no-git-tag-version
+          
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.bump_version.outputs.version }}"
+          git push
+      
+      - name: Create git tag
+        run: |
+          git tag -a "${{ steps.bump_version.outputs.tag }}" -m "Release ${{ steps.bump_version.outputs.tag }}"
+          git push origin "${{ steps.bump_version.outputs.tag }}"
+      
+      - name: Build DMG
+        run: yarn build:mac:dmg
+      
+      - name: Find DMG file
+        id: find_dmg
+        run: |
+          DMG_FILE=$(find dist -name "*.dmg" -type f | head -n 1)
+          if [ -z "$DMG_FILE" ]; then
+            echo "Error: DMG file not found"
+            exit 1
+          fi
+          echo "file=$DMG_FILE" >> $GITHUB_OUTPUT
+          echo "filename=$(basename $DMG_FILE)" >> $GITHUB_OUTPUT
+          echo "Found DMG: $DMG_FILE"
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.bump_version.outputs.tag }}
+          name: Release ${{ steps.bump_version.outputs.tag }}
+          body: |
+            ## Changes in ${{ steps.bump_version.outputs.tag }}
+            
+            See the [changelog](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          files: ${{ steps.find_dmg.outputs.file }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
