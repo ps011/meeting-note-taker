@@ -5,6 +5,7 @@ import { Moon, Sun } from 'lucide-react'
 
 export function ThemeToggle() {
   const [dark, setDark] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('aura:theme')
@@ -12,6 +13,7 @@ export function ThemeToggle() {
     const isDark = stored ? stored === 'dark' : prefersDark
     setDark(isDark)
     document.documentElement.classList.toggle('dark', isDark)
+    setMounted(true)
   }, [])
 
   const toggle = () => {
@@ -26,8 +28,9 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label="Toggle dark mode"
       className="rounded-base border-2 border-border bg-background p-1.5 shadow-shadow-sm transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+      suppressHydrationWarning
     >
-      {dark ? <Sun size={16} /> : <Moon size={16} />}
+      {mounted ? (dark ? <Sun size={16} /> : <Moon size={16} />) : <span className="block size-4" />}
     </button>
   )
 }
