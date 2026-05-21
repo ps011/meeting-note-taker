@@ -22,6 +22,16 @@
     color: var(--foreground);
   }
   h1, h2, h3, h4, h5, h6 { font-weight: 700; }
+  .dark {
+    --background: #1e3a8a;
+    --foreground: #ffffff;
+    --main: #60a5fa;
+    --main-foreground: #000000;
+    --border: #000000;
+    --secondary-background: #1e40af;
+    --ring: #ffffff;
+    --muted-foreground: #b8b8b8;
+  }
 }
 
 @layer components {

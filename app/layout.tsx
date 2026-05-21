@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DM_Sans } from 'next/font/google'
 import { SessionProvider } from '@/lib/session-context'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import '@/styles/globals.css'
 
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' })
@@ -19,7 +20,14 @@ const NAV_LINKS = [
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var s=localStorage.getItem('aura:theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(s==='dark'||(s==null&&d))document.documentElement.classList.add('dark')})()`,
+          }}
+        />
+      </head>
       <body className={`${dmSans.variable} min-h-screen bg-background font-sans`}>
         <SessionProvider>
           <header className="border-b-3 border-border bg-secondary-background">
@@ -27,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="text-xl font-bold tracking-tight">
                 AURA
               </Link>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 {NAV_LINKS.map(({ href, label }) => (
                   <Link
                     key={href}
@@ -37,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     {label}
                   </Link>
                 ))}
+                <ThemeToggle />
               </div>
             </nav>
           </header>

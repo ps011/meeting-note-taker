@@ -43,7 +43,7 @@ export default function HistoryPage() {
   }
 
   const handleView = (record: RecordingRecord) => {
-    router.push(`/history/${record.id}`)
+    router.push(`/history/note?id=${record.id}`)
   }
 
   return (

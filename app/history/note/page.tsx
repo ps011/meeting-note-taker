@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Download, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getRecording, type RecordingRecord } from '@/lib/history'
@@ -9,14 +9,15 @@ import { formatNote } from '@/lib/noteFormatter'
 import { downloadNote } from '@/lib/vault'
 import { renderMarkdown } from '@/lib/utils'
 
-export default function NoteViewPage() {
-  const params = useParams()
+function NoteView() {
+  const searchParams = useSearchParams()
   const router = useRouter()
+  const id = searchParams.get('id')
   const [record, setRecord] = useState<RecordingRecord | null>(null)
 
   useEffect(() => {
-    getRecording(params.id as string).then(r => setRecord(r ?? null))
-  }, [params.id])
+    if (id) getRecording(id).then(r => setRecord(r ?? null))
+  }, [id])
 
   if (!record) {
     return <p className="text-muted-foreground">Loading…</p>
@@ -62,5 +63,13 @@ export default function NoteViewPage() {
         </pre>
       </details>
     </div>
+  )
+}
+
+export default function NoteViewPage() {
+  return (
+    <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+      <NoteView />
+    </Suspense>
   )
 }
