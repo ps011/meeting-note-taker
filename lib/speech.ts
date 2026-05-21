@@ -85,7 +85,12 @@ export class SpeechRecorder {
 
   stop() {
     this.running = false
-    this.recognition?.stop()
-    this.recognition = null
+    if (this.recognition) {
+      this.recognition.onresult = null
+      this.recognition.onerror = null
+      this.recognition.onend = null
+      this.recognition.stop()
+      this.recognition = null
+    }
   }
 }
