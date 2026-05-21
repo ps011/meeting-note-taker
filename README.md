@@ -4,7 +4,7 @@
 [![Latest Release](https://img.shields.io/github/v/release/ps011/meeting-note-taker)](https://github.com/ps011/meeting-note-taker/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Record meetings, get a transcript, and generate AI summaries — all in the browser, all locally. No cloud, no installs, no macOS permission prompts.
+Record meetings, get a transcript, and generate AI summaries in the browser. Use local Ollama by default, or connect any OpenAI-compatible chat completions API with your own key.
 
 **Live app:** https://ps011.github.io/meeting-note-taker/
 
@@ -13,36 +13,39 @@ Record meetings, get a transcript, and generate AI summaries — all in the brow
 1. Open the app in Chrome or Edge
 2. Enter a title, pick a template, add participants
 3. Hit **Start Recording** — speak freely
-4. Hit **Stop** — Ollama summarises your transcript
+4. Hit **Stop** — your selected LLM summarises the transcript
 5. Download the note as `.md` or save it directly to your Obsidian vault
 
 ```
-Microphone → Web Speech API → Ollama (local LLM) → Markdown note → Obsidian / download
+Microphone → Web Speech API → Ollama or OpenAI-compatible LLM → Markdown note → Obsidian / download
 ```
 
-Everything runs locally. Audio never leaves your machine.
+Audio is handled by the browser's speech-recognition service. Summarisation requests are sent directly from your browser to the selected provider.
 
 ## Requirements
 
 - Chrome or Edge (Web Speech API)
-- [Ollama](https://ollama.com) running locally with a model pulled:
+- One summarization provider:
+  - [Ollama](https://ollama.com) running locally with a model pulled:
 
 ```bash
 ollama pull llama3.2
 ```
 
-- If accessing from the hosted GitHub Pages URL, start Ollama with CORS enabled:
+  - Or an OpenAI-compatible chat completions API key and model.
+
+- If accessing from the hosted GitHub Pages URL, the selected provider must allow browser CORS requests. For Ollama, start it with CORS enabled:
 
 ```bash
 OLLAMA_ORIGINS=https://ps011.github.io ollama serve
 ```
 
-If you run the app locally (`localhost`), no CORS flag is needed.
+If you run the app locally (`localhost`), no Ollama CORS flag is needed.
 
 ## Features
 
 - Real-time transcription via the browser's Web Speech API
-- AI summaries via local Ollama — no API keys, no cloud
+- AI summaries via local Ollama or an OpenAI-compatible API
 - 7 meeting templates: general, 1-on-1, standup, brainstorm, client, retrospective, interview
 - Save notes directly to an Obsidian vault (File System Access API)
 - Download notes as `.md`
@@ -67,8 +70,12 @@ Configure in the **Settings** page:
 
 | Setting | Default | Description |
 |---|---|---|
+| LLM provider | Ollama | Ollama or OpenAI-compatible |
 | Ollama API URL | `http://localhost:11434` | Where Ollama is running |
-| Model | `llama3.2` | Any model you have pulled |
+| Ollama model | `llama3.2` | Any model you have pulled |
+| OpenAI-compatible base URL | `https://api.openai.com/v1` | Base URL for the chat completions API |
+| OpenAI-compatible model | `gpt-4o-mini` | Model sent to the configured provider |
+| OpenAI-compatible API key | — | Stored in this browser profile and sent directly to the configured provider |
 | Default template | General | Template used for new recordings |
 | Obsidian vault | — | Folder picker for vault writes |
 
@@ -79,7 +86,7 @@ Settings are saved to `localStorage`.
 - [Next.js 15](https://nextjs.org) (static export)
 - TypeScript, Tailwind CSS
 - Web Speech API — transcription
-- [Ollama](https://ollama.com) — local LLM summarisation
+- [Ollama](https://ollama.com) and OpenAI-compatible chat completions APIs — LLM summarisation
 - IndexedDB (`idb`) — recording history
 - File System Access API — Obsidian vault writes
 - Deployed to GitHub Pages via GitHub Actions
