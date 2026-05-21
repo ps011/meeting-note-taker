@@ -10,10 +10,11 @@ export function MeetingSetup() {
   if (state.status !== 'idle') return null
 
   return (
-    <div className="rounded-base border-3 border-border bg-secondary-background p-4 shadow-shadow space-y-3">
+    <div className="grid gap-4 lg:grid-cols-[1.15fr_0.9fr_1fr] lg:items-end">
       <div>
-        <label className="block text-sm font-semibold mb-1">Meeting Title</label>
+        <label htmlFor="meeting-title" className="block text-sm font-semibold mb-1">Meeting Title</label>
         <input
+          id="meeting-title"
           type="text"
           value={state.title}
           onChange={e => dispatch({ type: 'UPDATE_TITLE', title: e.target.value })}
@@ -22,8 +23,9 @@ export function MeetingSetup() {
         />
       </div>
       <div>
-        <label className="block text-sm font-semibold mb-1">Template</label>
+        <label htmlFor="meeting-template" className="block text-sm font-semibold mb-1">Template</label>
         <select
+          id="meeting-template"
           value={state.templateId}
           onChange={e => dispatch({ type: 'UPDATE_TEMPLATE', templateId: e.target.value })}
           className="w-full rounded-base border-3 border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -34,8 +36,9 @@ export function MeetingSetup() {
         </select>
       </div>
       <div>
-        <label className="block text-sm font-semibold mb-1">Participants <span className="font-normal text-muted-foreground">(comma separated)</span></label>
+        <label htmlFor="meeting-participants" className="block text-sm font-semibold mb-1">Participants <span className="font-normal text-muted-foreground">(comma separated)</span></label>
         <input
+          id="meeting-participants"
           type="text"
           placeholder="e.g. Alice, Bob, Carol"
           onChange={e =>
