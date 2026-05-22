@@ -24,6 +24,7 @@
     "tailwind-merge": "^2.5.0",
     "uuid": "^10.0.0"
   },
+  "packageManager": "npm",
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@next/eslint-plugin-next": "^16.2.6",
