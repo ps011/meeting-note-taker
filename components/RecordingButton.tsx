@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { Mic, Square, Loader2 } from 'lucide-react'
+import { Square, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSession } from '@/lib/session-context'
 import { SpeechRecorder, isSpeechSupported } from '@/lib/speech'
-import { summarize } from '@/lib/ollama'
+import { summarize } from '@/lib/llm'
 import { createRecording, updateRecording } from '@/lib/history'
 import { notifyComplete, notifyError } from '@/lib/notifications'
 
@@ -89,9 +89,15 @@ export function RecordingButton() {
   return (
     <div className="flex flex-col items-center gap-3">
       {state.status === 'idle' && (
-        <Button onClick={handleStart} size="lg" className="w-64 text-lg">
-          <Mic className="size-5" /> Start Recording
-        </Button>
+        <button
+          type="button"
+          onClick={handleStart}
+          aria-label="Start recording"
+          title="Start recording"
+          className="flex size-48 items-center justify-center rounded-full border-4 border-border bg-red-500 shadow-shadow transition-all hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:translate-x-boxShadowX active:translate-y-boxShadowY active:shadow-none motion-reduce:transition-none"
+        >
+          <span className="size-24 rounded-full border-3 border-border bg-red-600" />
+        </button>
       )}
       {state.status === 'recording' && (
         <>

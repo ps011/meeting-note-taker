@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { HistoryCard } from '@/components/HistoryCard'
 import { HistoryFilter, type HistoryFilterValue } from '@/components/HistoryFilter'
 import { getAllRecordings, updateRecording, type RecordingRecord } from '@/lib/history'
-import { summarize } from '@/lib/ollama'
+import { summarize } from '@/lib/llm'
 
 export default function HistoryPage() {
   const [records, setRecords] = useState<RecordingRecord[]>([])
