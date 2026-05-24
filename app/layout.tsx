@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { DM_Sans } from 'next/font/google'
 import { SessionProvider } from '@/lib/session-context'
-import { ThemeProvider, ThemeSwitcher } from '@prasheel/ui'
+import { AppShellHeader } from '@/components/AppShellHeader'
+import { ThemeProvider } from '@prasheel/ui'
 import '@prasheel/ui/styles.css'
 import '@/styles/globals.css'
 
@@ -17,12 +17,6 @@ const THEME_STORAGE_KEYS = {
   themeId: 'aura:theme-id',
   colorMode: 'aura:theme',
 }
-
-const NAV_LINKS = [
-  { href: '/', label: 'Record' },
-  { href: '/history', label: 'History' },
-  { href: '/settings', label: 'Settings' },
-]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -41,25 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           useSystemDarkMode
         >
           <SessionProvider>
-            <header className="border-b-3 border-border bg-secondary-background">
-              <nav className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <Link href="/" className="shrink-0 text-xl font-bold tracking-tight">
-                  AURA
-                </Link>
-                <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-                  {NAV_LINKS.map(({ href, label }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      className="rounded-base border-2 border-border bg-background px-2.5 py-1.5 text-sm font-semibold shadow-shadow-sm transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none sm:px-3"
-                    >
-                      {label}
-                    </Link>
-                  ))}
-                  <ThemeSwitcher className="shrink-0" />
-                </div>
-              </nav>
-            </header>
+            <AppShellHeader />
             <main className="mx-auto max-w-4xl px-4 py-8">{children}</main>
           </SessionProvider>
         </ThemeProvider>
